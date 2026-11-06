@@ -56,7 +56,9 @@ Los colores de marca están centralizados en `src/theme/colors.ts`. Las nuevas p
 
 Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior. La entrevista y Actividades están disponibles como experiencias locales; las demás secciones son provisionales.
 
-La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). Antes de empezar permite elegir 5, 10 o 15 minutos; esta selección es orientativa y todavía no cambia la duración de la demo. No reproduce audio, no solicita el micrófono, no graba respuestas y no realiza análisis. Durante el turno de la usuaria, una ilustración animada de su sector se muestra sin audio; el botón «Siguiente pregunta» continúa la demo. El entrevistador es una ilustración con tres fotogramas y no reproduce sonido.
+La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). La duración seleccionada es orientativa. Utiliza Kokoro 82M con la voz masculina española `em_alex`: genera el audio en el dispositivo a partir del texto sin enviar las preguntas a ningún servicio de voz. La primera vez necesita descargar automáticamente el modelo (aprox. 92 MB), la voz, el motor ONNX y eSpeak-NG desde Hugging Face y jsDelivr; requiere conexión y puede tardar. Estos recursos pueden quedar en la caché del navegador, aunque su conservación depende de este. No se necesita API key. En móvil utiliza un WebView integrado en Expo Go para ejecutar el mismo motor; esta integración necesita verificarse en dispositivos iOS y Android reales. Si falla la carga o la reproducción se puede continuar sin audio. No se solicita el micrófono ni se graban respuestas.
+
+Kokoro está disponible bajo Apache-2.0; el procesador de pronunciación eSpeak-NG se distribuye bajo GPL-3.0-or-later. Consulta las licencias de los componentes antes de distribuirlos junto a la aplicación. La implementación usa versiones fijadas y descarga los recursos de terceros durante la ejecución.
 
 ### Endpoints pendientes para entrevistas
 
@@ -102,3 +104,7 @@ Actualidad muestra noticias por sector y semana local de calendario (lunes inclu
 
 - Consultar noticias reales por sector y por intervalo de semana: método, ruta, fecha, zona horaria, fuente, enlaces y paginación por definir.
 - Persistir el sector elegido y actualizar la fuente semanalmente: contrato, frecuencia y política editorial por definir. Actualmente el sector del onboarding solo se conserva durante la sesión.
+
+Para regenerar el código del reproductor móvil después de modificar `kokoroWeb.ts`, ejecuta `pnpm build:kokoro-bridge` desde `app`.
+
+El flujo previsto para el despliegue y la preparación personalizada con IA está registrado en [Plan de despliegue e IA](../docs/PLAN_DESPLIEGUE_IA.md).
