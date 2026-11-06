@@ -48,9 +48,9 @@ export default function LaunchScreen({ onFinish }: Props) {
   }, [steps, flag, rays, shift, name, fade]);
 
   return (
-    <Animated.View style={[styles.container, { opacity: fade }]} accessibilityLabel="SheReady" accessibilityRole="image">
+    <View style={styles.container} accessibilityLabel="SheReady" accessibilityRole="image">
       <StatusBar style="light" />
-      <View style={[styles.lockup, { width: 310 * scale, height: 140 * scale }]}>
+      <Animated.View style={[styles.lockup, { width: 310 * scale, height: 140 * scale, opacity: fade }]}>
         <Animated.View style={[styles.logo, { width: 140 * scale, height: 140 * scale, transform: [{ translateX: shift.interpolate({ inputRange: [0, 1], outputRange: [75 * scale, 0] }) }] }]}>
           <Svg width={140 * scale} height={140 * scale} viewBox="0 0 600 600">
             <AnimatedGroup opacity={steps}>
@@ -68,8 +68,8 @@ export default function LaunchScreen({ onFinish }: Props) {
           </Svg>
         </Animated.View>
         <Animated.View style={[styles.name, { opacity: name, transform: [{ translateX: name.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}><Text style={[styles.nameText, { fontSize: 52 * scale, lineHeight: 54 * scale, letterSpacing: -2 * scale }]}>She{'\n'}Ready</Text></Animated.View>
-      </View>
-    </Animated.View>
+      </Animated.View>
+    </View>
   );
 }
 

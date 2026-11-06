@@ -56,10 +56,10 @@ Los colores de marca están centralizados en `src/theme/colors.ts`. Las nuevas p
 
 Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior. Las secciones distintas de la entrevista son provisionales.
 
-La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). No reproduce audio, no solicita el micrófono, no graba respuestas y no realiza análisis. En web se usa [Strands de React Bits](https://www.reactbits.dev/animations/strands); en móvil se utiliza una animación SVG inspirada en Strands, compatible con Expo Go. El entrevistador es una ilustración vectorial animada, no un modelo 3D.
+La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). Antes de empezar permite elegir 5, 10 o 15 minutos; esta selección es orientativa y todavía no cambia la duración de la demo. No reproduce audio, no solicita el micrófono, no graba respuestas y no realiza análisis. Se usa el mismo [Strands de React Bits](https://www.reactbits.dev/animations/strands) en web y móvil; en Expo Go se ejecuta localmente en un WebView. Si el dispositivo no admite WebGL 2, se muestra una alternativa SVG. Tras cambiar Strands o la paleta, ejecuta `pnpm build:strands` para actualizar la versión integrada en móvil. El entrevistador es una ilustración vectorial animada, no un modelo 3D.
 
 ### Endpoints pendientes para entrevistas
 
 - **Crear y conducir una sesión de práctica por voz**: método, ruta, autenticación, transporte y contrato por definir. Deberá gestionar los turnos y los permisos necesarios.
-- **Finalizar una entrevista y consultar su análisis**: método, ruta, datos enviados y estructura del resultado por definir. El mensaje final de la demo no inicia ningún análisis.
+- **Finalizar una entrevista y consultar su análisis**: método, ruta, datos enviados y estructura del resultado por definir. El botón de revisión muestra un estado informativo: la demo no inicia ningún análisis ni añade entrevistas al historial.
 - **Consultar el historial y el detalle de entrevistas**: métodos, rutas y respuestas por definir.
