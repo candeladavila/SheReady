@@ -22,8 +22,8 @@ const sectors = ['Tecnología', 'Marketing', 'Finanzas', 'Educación y salud', '
 const purple = colors.plum;
 const sage = colors.sage;
 
-export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
-  const [page, setPage] = useState(1);
+export default function OnboardingScreen({ onComplete, onSkip, startAtForm = false }: { onComplete: () => void; onSkip: () => void; startAtForm?: boolean }) {
+  const [page, setPage] = useState(startAtForm ? 2 : 1);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [age, setAge] = useState('');
   const [time, setTime] = useState('');
@@ -38,7 +38,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
       <StatusBar style="dark" />
       {page === 1 ? (
         <ScrollView contentContainerStyle={styles.intro}>
-          <View style={styles.introHeader}><Text style={styles.brand}>She ready</Text><Pressable accessibilityRole="button" onPress={onComplete} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View>
+          <View style={styles.introHeader}><Text style={styles.brand}>She ready</Text><Pressable accessibilityRole="button" onPress={onSkip} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View>
           <View style={styles.hero}><Text style={styles.heroEyebrow}>NO TIENES QUE TENERLO TODO CLARO.</Text><Text style={styles.heroTitle}>Un paso.</Text><Text style={[styles.heroTitle, styles.heroItalic]}>Y otro.</Text><View style={styles.heroLast}><Text style={[styles.heroTitle, { color: sage }]}>A tu ritmo.</Text><Text style={styles.limeArrow}>↗</Text></View></View>
           <Text style={styles.introTitle}>Tu próximo capítulo,{'\n'}con compañía.</Text>
           <Text style={styles.description}>Ejercicios diarios, noticias relevantes y práctica de entrevistas con IA por voz para que avances con claridad y confianza.</Text>
@@ -47,7 +47,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
         </ScrollView>
       ) : (
         <>
-          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => setPage(page - 1)} hitSlop={12}><Text style={styles.back}>←</Text></Pressable><Text style={styles.brand}>She ready</Text><View style={styles.headerRight}><Text style={styles.counter}>{page - 1} de 5</Text><Pressable accessibilityRole="button" onPress={onComplete} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View></View>
+          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => setPage(page - 1)} hitSlop={12}><Text style={styles.back}>←</Text></Pressable><Text style={styles.brand}>She ready</Text><View style={styles.headerRight}><Text style={styles.counter}>{page - 1} de 5</Text><Pressable accessibilityRole="button" onPress={onSkip} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View></View>
           <View style={styles.progress}>{[0, 1, 2, 3, 4].map(i => <View key={i} style={[styles.progressPart, i < page - 1 && styles.progressActive]} />)}</View>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {page === 2 && <><Heading eyebrow="TU PUNTO DE PARTIDA" title={'¿Qué necesitas\nhoy?'} description="Elige uno o varios objetivos. Empezaremos por lo que más te importa." /><View style={styles.options}>{goals.map(option => <Choice key={option.label} option={option} selected={selectedGoals.includes(option.label)} multiple onPress={() => toggleGoal(option.label)} />)}</View></>}
