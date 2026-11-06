@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 600 600" role="img" aria-labelledby="title desc">
+  <title id="title">SheReady — escalera hacia el empleo</title>
+  <desc id="desc">Icono cuadrado color ciruela con tres peldaños lavanda y crema, rematados por una bandera coral y destellos claros.</desc>
+  <defs>
+    <linearGradient id="plum" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#603162" />
+      <stop offset="1" stop-color="#4C254C" />
+    </linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="0.8">
+      <stop offset="0" stop-color="#E6D1EE" />
+      <stop offset="1" stop-color="#BFA1D8" />
+    </linearGradient>
+    <linearGradient id="front" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C39BD4" />
+      <stop offset="1" stop-color="#A47AB7" />
+    </linearGradient>
+    <linearGradient id="cream" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFBF6" />
+      <stop offset="1" stop-color="#F3E8E2" />
+    </linearGradient>
+    <linearGradient id="coral" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFAD9B" />
+      <stop offset="1" stop-color="#F68F82" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo redondeado de app -->
+  <rect x="18" y="18" width="564" height="564" rx="145" fill="url(#plum)"/>
+
+  <!-- Pequeños rayos que destacan la llegada a la meta -->
+  <g fill="none" stroke="#FFF4E9" stroke-width="15" stroke-linecap="round">
+    <path d="M278 182 H312"/>
+    <path d="M299 124 L329 151"/>
+    <path d="M350 89 L365 121"/>
+  </g>
+
+  <!-- Bandera coral: mástil y banderín -->
+  <rect x="387" y="149" width="14" height="143" rx="7" fill="url(#coral)"/>
+  <path d="M396 153 L482 192 Q490 197 482 203 L396 241 Z" fill="url(#coral)"/>
+
+  <!-- Escalera principal: tres peldaños ascendentes -->
+  <path d="M150 415 H210 V373 Q210 341 242 341 H321 V311 Q321 280 352 280 H434 Q463 280 463 308 V484 Q463 500 447 500 H123 Q108 500 108 485 V459 Q108 415 150 415 Z" fill="url(#cream)"/>
+
+  <!-- Superficie inferior lavanda -->
+  <path d="M150 415 H329 Q354 415 354 442 V500 H123 Q108 500 108 485 V458 Q108 415 150 415 Z" fill="url(#base)"/>
+
+  <!-- Cara frontal de los peldaños -->
+  <path d="M367 340 H463 V485 Q463 500 447 500 H232 V457 Q232 415 275 415 H337 V370 Q337 340 367 340 Z" fill="url(#front)"/>
+</svg>

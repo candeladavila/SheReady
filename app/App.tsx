@@ -1,26 +1,11 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import LaunchScreen from './src/screens/LaunchScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
+import AppShell from './src/navigation/AppShell';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>SheReady</Text>
-      <Text>Tu aplicación está lista para empezar.</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+  const [stage, setStage] = useState<'launch' | 'onboarding' | 'app'>('launch');
+  if (stage === 'launch') return <LaunchScreen onFinish={() => setStage('onboarding')} />;
+  if (stage === 'onboarding') return <OnboardingScreen onComplete={() => setStage('app')} />;
+  return <AppShell />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-});
