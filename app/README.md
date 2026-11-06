@@ -56,7 +56,7 @@ Los colores de marca están centralizados en `src/theme/colors.ts`. Las nuevas p
 
 Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior. La entrevista y Actividades están disponibles como experiencias locales; las demás secciones son provisionales.
 
-La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). Antes de empezar permite elegir 5, 10 o 15 minutos; esta selección es orientativa y todavía no cambia la duración de la demo. No reproduce audio, no solicita el micrófono, no graba respuestas y no realiza análisis. Se usa el mismo [Strands de React Bits](https://www.reactbits.dev/animations/strands) en web y móvil; en Expo Go se ejecuta localmente en un WebView. Si el dispositivo no admite WebGL 2, se muestra una alternativa SVG. Tras cambiar Strands o la paleta, ejecuta `pnpm build:strands` para actualizar la versión integrada en móvil. El entrevistador es una ilustración vectorial animada, no un modelo 3D.
+La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). Antes de empezar permite elegir 5, 10 o 15 minutos; esta selección es orientativa y todavía no cambia la duración de la demo. No reproduce audio, no solicita el micrófono, no graba respuestas y no realiza análisis. Durante el turno de la usuaria, una ilustración animada de su sector se muestra sin audio; el botón «Siguiente pregunta» continúa la demo. El entrevistador es una ilustración con tres fotogramas y no reproduce sonido.
 
 ### Endpoints pendientes para entrevistas
 
