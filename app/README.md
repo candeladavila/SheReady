@@ -73,3 +73,12 @@ La sección Actividades agrupa las actividades diarias y muestra un espacio para
 - **Consultar catálogo y registrar actividades completadas**: métodos, rutas, persistencia y contratos pendientes de definir.
 
 «Para mi mini yo» permite guardar y eliminar frases localmente en el dispositivo mediante AsyncStorage; no se sincronizan con el servidor. «Mi evidencia de confianza» guía una reflexión de cuatro pasos y mantiene las respuestas solo mientras la actividad está abierta. Ninguna de las dos requiere API.
+
+## Inicio
+
+La página de inicio usa un nombre y contenido de actualidad de ejemplo. La recomendación de confianza es una actividad existente mostrada como ejemplo; todavía no se genera un plan personalizado con IA. Los accesos de actividades abren las mismas instrucciones que el listado.
+
+### Endpoints pendientes para inicio
+
+- **Perfil de la usuaria y recomendaciones de actividades**: métodos, rutas y contratos pendientes de definir.
+- **Noticias de actualidad**: fuentes, método, ruta y respuesta pendientes de definir.
