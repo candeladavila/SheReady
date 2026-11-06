@@ -183,4 +183,8 @@ class GeminiProvider:
 
 
 def get_ai():
+    if get_settings().ai_provider == "ollama":
+        from ollama_provider import OllamaProvider
+
+        return OllamaProvider()
     return GeminiProvider()

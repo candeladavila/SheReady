@@ -1,3 +1,4 @@
+import { api } from '../services/api';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, Easing, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { colors } from '../theme/colors';
@@ -9,6 +10,8 @@ const PLAYLIST = 'https://open.spotify.com/user/spotify/playlist/37i9dQZF1DWZqd5
 type Screen = 'list' | 'instructions' | 'breathing' | 'logo' | 'finished' | 'mini' | 'confidence';
 
 export default function ActivitiesScreen({ onSessionChange, initialScreen = 'list' }: { onSessionChange: (active: boolean) => void; initialScreen?: 'list' | 'instructions' | 'confidence' }) {
+  const completionId = useRef('');
+  const [saveError, setSaveError] = useState('');
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [duration, setDuration] = useState<1 | 5 | 10>(1);
   const total = duration * 60_000;
@@ -63,7 +66,8 @@ export default function ActivitiesScreen({ onSessionChange, initialScreen = 'lis
     });
     return () => listener.remove();
   }, [screen, paused, total]);
-  const start = () => { elapsedRef.current = 0; setElapsed(0); setPaused(false); setScreen('breathing'); };
+  useEffect(() => { if (screen === 'finished') api.wellbeingComplete({ id: completionId.current, kind: 'breathing', duration_seconds: duration * 60 }).catch(() => setSaveError('No se pudo registrar la práctica en el servidor.')); }, [screen]);
+  const start = () => { completionId.current = `breathing-${Date.now()}-${Math.random().toString(36).slice(2)}`; setSaveError(''); elapsedRef.current = 0; setElapsed(0); setPaused(false); setScreen('breathing'); };
   const togglePause = () => {
     if (!paused) { elapsedRef.current = Math.min(total, Date.now() - startedAt.current); setElapsed(elapsedRef.current); }
     setPaused(!paused);
@@ -71,7 +75,7 @@ export default function ActivitiesScreen({ onSessionChange, initialScreen = 'lis
   const openPlaylist = async () => { try { setLinkError(false); await Linking.openURL(PLAYLIST); } catch { setLinkError(true); } };
   if (screen === 'mini' || screen === 'confidence') return <ReflectionActivity kind={screen} onBack={() => setScreen('list')} />;
   if (screen === 'logo') return <LaunchScreen onFinish={() => setScreen('finished')} />;
-  if (screen === 'finished') return <View style={styles.finish}><Text style={styles.finishEyebrow}>UN MOMENTO PARA TI</Text><Text style={styles.finishTitle}>Actividad terminada.</Text><Text style={styles.finishCopy}>Has dedicado {duration === 1 ? 'un minuto' : `${duration} minutos`} a ti. Continúa a tu ritmo.</Text><Pressable accessibilityRole="button" onPress={() => setScreen('list')} style={styles.finishButton}><Text style={styles.finishButtonText}>Volver a actividades  ↗</Text></Pressable></View>;
+  if (screen === 'finished') return <View style={styles.finish}><Text style={styles.finishEyebrow}>UN MOMENTO PARA TI</Text><Text style={styles.finishTitle}>Actividad terminada.</Text><Text style={styles.finishCopy}>Has dedicado {duration === 1 ? 'un minuto' : `${duration} minutos`} a ti. Continúa a tu ritmo. {saveError}</Text><Pressable accessibilityRole="button" onPress={() => setScreen('list')} style={styles.finishButton}><Text style={styles.finishButtonText}>Volver a actividades  ↗</Text></Pressable></View>;
   if (screen === 'breathing') return <View style={styles.breathe}>
     <View style={styles.breatheHeader}><Text style={styles.eyebrow}>UN MOMENTO PARA TI</Text><Text style={styles.timer}>{`${Math.floor(Math.ceil((total - elapsed) / 1000) / 60)}:${String(Math.ceil((total - elapsed) / 1000) % 60).padStart(2, '0')}`}</Text></View>
     <View style={styles.breatheCenter}><View style={[styles.circleArea, { width: circleSize, height: circleSize }]}><View style={styles.outerCircle} /><Animated.View style={[styles.innerCircle, { transform: [{ scale: reduceMotion ? 0.88 : scale.interpolate({ inputRange: [0, 1], outputRange: [0.68, 1] }) }] }]} /><View style={styles.circleLabel}><Text accessibilityLiveRegion="polite" style={styles.phase}>{paused ? 'En pausa' : phase === 'inhale' ? 'Inhala' : phase === 'hold' ? 'Pausa' : 'Exhala'}</Text><Text style={styles.phaseHint}>{paused ? 'Retoma cuando quieras' : phase === 'inhale' ? 'Suavemente' : phase === 'hold' ? 'Solo si te resulta cómodo' : 'Sin prisa'}</Text></View></View><Text style={styles.breatheCopy}>Respira de forma cómoda, sin forzar.</Text></View>

@@ -1,3 +1,8 @@
+> Integración actual: Inicio, entrevista y bienestar ya usan el cliente de API.
+> Consulta [API-CLIENT.md](API-CLIENT.md) para el contrato y el arranque actualizado.
+> Los apartados antiguos de endpoints pendientes describen la maqueta anterior y se
+> conservan como contexto de diseño; la referencia vigente es API-CLIENT.md.
+
 # SheReady App
 
 Aplicación móvil de SheReady, creada con React Native, Expo y TypeScript.

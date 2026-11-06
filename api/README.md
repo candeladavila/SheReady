@@ -137,3 +137,50 @@ Referencias: [Gemini y audio](https://ai.google.dev/gemini-api/docs/audio),
 [cuotas y precios](https://ai.google.dev/gemini-api/docs/pricing),
 [condiciones de datos](https://ai.google.dev/gemini-api/terms),
 [servicios gratuitos de Render](https://render.com/docs/free).
+
+
+## Ollama local (alternativa a Gemini para texto)
+
+En `.env` configura `AI_PROVIDER=ollama`, `OLLAMA_MODEL=qwen3:4b` y, si hace falta,
+`OLLAMA_URL=http://127.0.0.1:11434`. Ejecuta `ollama pull qwen3:4b` y mantén Ollama
+iniciado. Hay un ejemplo en `ollama.env.example`. En esta máquina se ha configurado
+el proveedor local; PostgreSQL se configura por separado con DATABASE_URL.
+
+Ollama genera preguntas, actividades y feedback con JSON Schema y validación Pydantic.
+No hay sustitución automática por Gemini. El timeout local se controla mediante
+OLLAMA_TIMEOUT_SECONDS (180 por defecto). El primer arranque del modelo puede ser lento.
+
+Qwen3:4b sigue generando el texto; los motores locales de audio se describen al final de este documento. PostgreSQL se configura por separado.
+
+## Arranque local en Windows
+
+PostgreSQL se ejecuta con el servicio `db` de `compose.yaml`, con volumen persistente
+`api_pgdata` y puerto local 5432. La configuración local usa Ollama para texto.
+Para iniciar la base, aplicar migraciones y mantener FastAPI en primer plano:
+
+```powershell
+cd api
+.\start-local.ps1
+```
+
+Docker Desktop debe poder iniciar su motor Linux. La API se publica en
+http://localhost:8000 y `/ready` verifica la conexión PostgreSQL y el esquema.
+El frontend web usa EXPO_PUBLIC_API_URL=http://localhost:8000. Para un dispositivo
+físico se necesita la IP del ordenador y arrancar Uvicorn escuchando en la red;
+`localhost` en el teléfono apunta al teléfono, no a este ordenador.
+
+Una base nueva no contiene perfil: PUT /profile debe guardar los campos obligatorios
+antes de POST /interviews. El onboarding visual introductorio aún no envía esos campos;
+no se crean perfiles ficticios automáticamente. Ollama ya genera texto, pero la voz
+local sigue pendiente de motores de transcripción y síntesis.
+
+
+## Voz local configurada
+
+El proveedor Ollama utiliza ahora Windows System.Speech con voz española para sintetizar
+las preguntas y faster-whisper (base multilingüe, CPU int8) para transcribir respuestas.
+No se envía audio a Gemini. Instala `requirements-local-audio.txt` y ejecuta una vez
+`python prepare-local-audio.py` para descargar el modelo. Después la transcripción usa
+solo los archivos locales en `.models/whisper-base` (ignorados en Git). El audio temporal
+de síntesis se elimina al terminar la petición. Esta síntesis requiere Windows con una
+voz española instalada y no es compatible con el contenedor Linux del Dockerfile actual.

@@ -48,7 +48,7 @@ class AnswerInput(InputModel):
 
 
 class InterviewInput(InputModel):
-    duration_minutes: Literal[3, 5, 10] = 5
+    duration_minutes: Literal[3, 5, 10, 15] = 5
 
 
 class TurnAnswerInput(AnswerInput):

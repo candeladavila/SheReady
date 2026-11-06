@@ -6,3 +6,9 @@ __pycache__/
 *.db
 .test-temp*/
 .debug-tests/
+
+*.log
+
+.api.pid
+
+.models/
