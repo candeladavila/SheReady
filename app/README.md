@@ -59,15 +59,11 @@ Los colores de marca están centralizados en `src/theme/colors.ts`. Las nuevas p
 
 ## Navegación y demo de entrevista
 
-Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior. La entrevista y Actividades están disponibles como experiencias locales; las demás secciones son provisionales.
+Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior.
 
-La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). Antes de empezar permite elegir 5, 10 o 15 minutos; esta selección es orientativa y todavía no cambia la duración de la demo. No reproduce audio, no solicita el micrófono, no graba respuestas y no realiza análisis. Se usa el mismo [Strands de React Bits](https://www.reactbits.dev/animations/strands) en web y móvil; en Expo Go se ejecuta localmente en un WebView. Si el dispositivo no admite WebGL 2, se muestra una alternativa SVG. Tras cambiar Strands o la paleta, ejecuta `pnpm build:strands` para actualizar la versión integrada en móvil. El entrevistador es una ilustración vectorial animada, no un modelo 3D.
+La entrevista utiliza el cliente de API: crea una sesión, reproduce las preguntas servidas por el backend, solicita acceso al micrófono y envía las respuestas grabadas para su transcripción. Al finalizar, consulta el informe y permite revisar el historial. Configura `EXPO_PUBLIC_API_URL` como se explica en [API-CLIENT.md](API-CLIENT.md). Las ilustraciones animadas representan los turnos del entrevistador y de la usuaria.
 
-### Endpoints pendientes para entrevistas
-
-- **Crear y conducir una sesión de práctica por voz**: método, ruta, autenticación, transporte y contrato por definir. Deberá gestionar los turnos y los permisos necesarios.
-- **Finalizar una entrevista y consultar su análisis**: método, ruta, datos enviados y estructura del resultado por definir. El botón de revisión muestra un estado informativo: la demo no inicia ningún análisis ni añade entrevistas al historial.
-- **Consultar el historial y el detalle de entrevistas**: métodos, rutas y respuestas por definir.
+Los módulos de Kokoro de la demostración anterior se conservan en el proyecto, pero esta pantalla utiliza actualmente el audio proporcionado por el backend.
 
 ## Actividades
 
@@ -87,3 +83,27 @@ La página de inicio usa un nombre y contenido de actualidad de ejemplo. La reco
 
 - **Perfil de la usuaria y recomendaciones de actividades**: métodos, rutas y contratos pendientes de definir.
 - **Noticias de actualidad**: fuentes, método, ruta y respuesta pendientes de definir.
+
+## Perfil y entrevistas reales
+
+Las entrevistas reales se guardan localmente con AsyncStorage en este dispositivo; no se sincronizan con una cuenta y el almacenamiento no está cifrado. El perfil permite retomar el onboarding si se ha saltado. El estado de finalización y las respuestas del onboarding solo duran durante la sesión; su persistencia está pendiente. Desde Perfil o desde Entrevista se puede registrar una oferta (enlace o descripción), empresa, puesto, fecha y hora local, consultar la cuenta atrás, anotar recordatorios personales y añadir feedback tras la entrevista. El acceso a respiración abre la actividad con un minuto como opción inicial.
+
+### Endpoints pendientes de perfil y entrevistas reales
+
+- Crear, consultar y modificar el perfil de la usuaria y recuperar los datos del onboarding: método, ruta y contrato por definir.
+- Crear, consultar y modificar entrevistas reales, fechas, ofertas, notas y feedback: métodos, rutas y contratos por definir.
+- Gestionar recordatorios y permisos de notificación, así como generar planes personalizados: métodos, rutas, canales y contratos por definir. Actualmente no se envían notificaciones ni se genera un plan con IA.
+
+
+## Noticias semanales
+
+Actualidad muestra noticias por sector y semana local de calendario (lunes incluido a lunes siguiente excluido). Si se completó el onboarding durante la sesión, se selecciona su sector; también se puede cambiar el filtro. La única noticia es ficticia: su fecha simulada se ajusta a la semana actual, por lo que no representa una publicación real. Los sectores sin ejemplo muestran un estado vacío.
+
+### Backend pendiente para noticias
+
+- Consultar noticias reales por sector y por intervalo de semana: método, ruta, fecha, zona horaria, fuente, enlaces y paginación por definir.
+- Persistir el sector elegido y actualizar la fuente semanalmente: contrato, frecuencia y política editorial por definir. Actualmente el sector del onboarding solo se conserva durante la sesión.
+
+Para regenerar el código del reproductor móvil después de modificar `kokoroWeb.ts`, ejecuta `pnpm build:kokoro-bridge` desde `app`.
+
+El flujo previsto para el despliegue y la preparación personalizada con IA está registrado en [Plan de despliegue e IA](../docs/PLAN_DESPLIEGUE_IA.md).

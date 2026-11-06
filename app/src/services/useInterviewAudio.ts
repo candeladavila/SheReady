@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
-import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
+import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { api } from './api';
 
@@ -8,6 +8,7 @@ export function useInterviewAudio() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const state = useAudioRecorderState(recorder);
   const player = useAudioPlayer(null);
+  const playbackStatus = useAudioPlayerStatus(player);
   const temporary = useRef<string | null>(null);
   const active = useRef(false);
   const transcriptCache = useRef<{ interviewId: string; result: Awaited<ReturnType<typeof api.interviews.transcribe>> } | null>(null);
@@ -37,6 +38,7 @@ export function useInterviewAudio() {
   }, [state.durationMillis, state.isRecording]);
   return {
     recording: state.isRecording,
+    playing: playbackStatus.playing,
     async play(interviewId: string, turnId: string) {
       await clearAudio();
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
