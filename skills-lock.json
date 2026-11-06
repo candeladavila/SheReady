@@ -19,6 +19,12 @@
       "skillPath": "skills/shadcn/SKILL.md",
       "computedHash": "b864a958765563321f485a96f4d59c0bb6539f4286ab6d8b8b66895b7ebd302d"
     },
+    "ui-from-image": {
+      "source": "Ixe1/ui-from-image",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "642a0b5799cd6c335228429ca06bc9273b97513f2bca438549b880c7af78ae99"
+    },
     "webapp-testing": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
