@@ -1,26 +1,20 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { colors } from '../theme/colors';
+import ActivityIllustration from '../components/ActivityIllustration';
 
-export default function HomeScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>SheReady</Text>
-      <Text>Tu aplicación está lista para empezar.</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+type Props = { onInterview: () => void; onActivity: (activity: 'instructions' | 'confidence') => void; onActivities: () => void };
+
+export default function HomeScreen({ onInterview, onActivity, onActivities }: Props) {
+  const width = useWindowDimensions().width;
+  const wide = width >= 760;
+  const desktop = width >= 1050;
+  return <ScrollView contentContainerStyle={styles.page}><View style={styles.content}>
+    <View style={[styles.welcome, desktop && styles.welcomeDesktop]}><View style={[styles.welcomeText, desktop && styles.welcomeTextDesktop]}><Text style={styles.eyebrow}>TU ESPACIO, TU CAMINO</Text><Text style={styles.title}>Bienvenida de nuevo,{'\n'}<Text style={styles.accent}>Lucía.</Text></Text><Text style={styles.subtitle}>Cada paso que das también es una forma de creer en ti.</Text><Text style={styles.demo}>Perfil de ejemplo</Text></View><Pressable accessibilityRole="button" onPress={onInterview} style={({ pressed }) => [styles.interview, desktop && styles.interviewDesktop, pressed && styles.pressed]}><View><Text style={styles.cardEyebrow}>TU PRÓXIMA OPORTUNIDAD</Text><Text style={styles.interviewTitle}>Practica a tu ritmo.</Text><Text style={styles.interviewDescription}>Un espacio para preparar tu próxima entrevista.</Text></View><View style={styles.interviewButton}><Text style={styles.interviewButtonText}>Realizar entrevista de prueba</Text><Text style={styles.interviewButtonText}>↗</Text></View></Pressable></View>
+    <View style={[styles.dashboard, desktop && styles.dashboardDesktop]}><View style={styles.activitySection}><View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>UN MOMENTO PARA TI</Text><Text style={styles.sectionTitle}>Tu próximo paso</Text></View><Pressable accessibilityRole="button" onPress={onActivities} style={styles.textLink}><Text style={styles.textLinkLabel}>Ver todas  ↗</Text></Pressable></View>
+    <View style={[styles.cards, wide && styles.cardsWide]}><ActivityCard kind="breathing" category="PARA TU DÍA A DÍA" duration="1, 5 o 10 min" title="Un momento para respirar" description="Regálate una pausa y vuelve a tu ritmo." color={colors.sageSurface} onPress={() => onActivity('instructions')} /><ActivityCard kind="confidence" category="RECOMENDACIÓN DE EJEMPLO" duration="3 min aprox." title="Mi evidencia de confianza" description="Reconoce las capacidades que ya te han acompañado." color={colors.lavenderSurface} onPress={() => onActivity('confidence')} /></View></View>
+    <View style={styles.newsSection}><View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>PARA INSPIRARTE</Text><Text style={styles.sectionTitle}>Noticia del día</Text></View></View><View style={styles.news}><Text style={styles.newsTag}>CONTENIDO DE EJEMPLO</Text><Text style={styles.newsTitle}>Tu próximo aprendizaje puede empezar con una pregunta.</Text><Text style={styles.newsCopy}>Aquí encontrarás noticias relevantes sobre empleo y desarrollo profesional cuando conectemos las fuentes de actualidad.</Text><Text style={styles.newsFoot}>Actualidad · Próximamente</Text></View></View></View>
+  </View></ScrollView>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-});
+function ActivityCard({ kind, category, duration, title, description, color, onPress }: { kind: 'breathing' | 'confidence'; category: string; duration: string; title: string; description: string; color: string; onPress: () => void }) { return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.activity, { backgroundColor: color }, pressed && styles.pressed]}><ActivityIllustration kind={kind} /><View style={styles.activityContent}><View style={styles.activityTop}><Text style={styles.activityCategory}>{category}</Text><Text style={styles.duration}>◷ {duration}</Text></View><Text style={styles.activityTitle}>{title}</Text><Text style={styles.activityCopy}>{description}</Text><Text style={styles.activityLink}>Ver actividad  ↗</Text></View></Pressable>; }
+const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' });
+const styles = StyleSheet.create({ page: { flexGrow: 1, backgroundColor: colors.ivory, paddingHorizontal: 24, paddingVertical: 32, alignItems: 'center' }, content: { width: '100%', maxWidth: 1500, paddingBottom: 28 }, welcome: { gap: 28 }, welcomeDesktop: { flexDirection: 'row', alignItems: 'center', gap: 48, paddingTop: 20 }, welcomeText: { maxWidth: 660 }, welcomeTextDesktop: { flex: 1, minWidth: 0 }, interviewDesktop: { flex: 1, maxWidth: 560, minWidth: 0 }, dashboard: {}, dashboardDesktop: { flexDirection: 'row', gap: 28, alignItems: 'flex-start' }, activitySection: { flex: 2, minWidth: 0 }, newsSection: { flex: 1, minWidth: 0 }, eyebrow: { color: colors.plum, fontSize: 10, fontWeight: '700', letterSpacing: 1.6, marginBottom: 12 }, title: { fontFamily: serif, fontSize: 43, lineHeight: 47, letterSpacing: -1.5, color: colors.eggplant }, accent: { color: colors.plum }, subtitle: { color: colors.mutedText, fontSize: 15, lineHeight: 23, marginTop: 15 }, demo: { color: colors.mutedText, fontSize: 11, marginTop: 9 }, interview: { backgroundColor: colors.plum, borderRadius: 22, padding: 23, gap: 25 }, cardEyebrow: { color: colors.lightText, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 }, interviewTitle: { color: colors.ivory, fontFamily: serif, fontSize: 29, lineHeight: 34, marginTop: 10 }, interviewDescription: { color: colors.lightText, fontSize: 14, lineHeight: 21, marginTop: 7 }, interviewButton: { backgroundColor: colors.ivory, minHeight: 50, borderRadius: 13, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, interviewButtonText: { color: colors.plum, fontSize: 14, fontWeight: '700', flexShrink: 1 }, sectionHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 38, marginBottom: 16 }, sectionTitle: { color: colors.eggplant, fontFamily: serif, fontSize: 30, lineHeight: 36 }, textLink: { minHeight: 44, justifyContent: 'center' }, textLinkLabel: { color: colors.plum, fontSize: 13, fontWeight: '700' }, cards: { gap: 12 }, cardsWide: { flexDirection: 'row' }, activity: { borderRadius: 20, overflow: 'hidden', minHeight: 190, flex: 1 }, activityContent: { padding: 21 }, activityTop: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }, activityCategory: { color: colors.plum, fontSize: 10, letterSpacing: 1, fontWeight: '700' }, duration: { color: colors.mutedText, fontSize: 12 }, activityTitle: { color: colors.eggplant, fontFamily: serif, fontSize: 25, lineHeight: 30, marginTop: 19 }, activityCopy: { color: colors.mutedText, fontSize: 14, lineHeight: 21, marginTop: 7 }, activityLink: { color: colors.plum, fontSize: 13, fontWeight: '700', marginTop: 18 }, news: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, borderRadius: 20, padding: 22 }, newsTag: { color: colors.plum, fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }, newsTitle: { color: colors.eggplant, fontFamily: serif, fontSize: 25, lineHeight: 31, marginTop: 14 }, newsCopy: { color: colors.mutedText, fontSize: 14, lineHeight: 22, marginTop: 10 }, newsFoot: { color: colors.mutedText, fontSize: 12, marginTop: 17 }, pressed: { opacity: 0.8 } });
