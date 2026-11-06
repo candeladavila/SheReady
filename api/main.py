@@ -1,8 +1,436 @@
-from fastapi import FastAPI
+from datetime import date, timedelta
+from secrets import compare_digest
+from typing import Annotated
 
-app = FastAPI(title="SheReady API")
+from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import func, select, text
+from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
+
+from ai import get_ai
+from config import get_settings
+from content import CONTENT, SKILLS
+from database import get_db
+from middleware import BodyLimitMiddleware
+from models import Activity, Interview, InterviewTurn, Profile, now
+from schemas import AnswerInput, InterviewInput, ProfileInput, TurnAnswerInput
+from services import (
+    activity_or_404,
+    activity_view,
+    ai_profile,
+    interview_or_404,
+    interview_view,
+    personalization,
+    profile_or_404,
+    today,
+    turn_view,
+)
+
+app = FastAPI(
+    title="SheReady API",
+    version="1.0.0",
+    description=(
+        "Backend de demo con un perfil compartido. IA real mediante Gemini; contenido editorial de ejemplo. "
+        "Configura DEMO_ACCESS_TOKEN si expones la API. Los endpoints no implementan cuentas individuales."
+    ),
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in get_settings().cors_origins.split(",") if o.strip()],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+bearer = HTTPBearer(auto_error=False)
+app.add_middleware(BodyLimitMiddleware)
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
+def demo_access(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
+    expected = get_settings().demo_access_token.get_secret_value()
+    if expected and (not credentials or not compare_digest(credentials.credentials, expected)):
+        raise HTTPException(
+            401, "Token de acceso a la demo incorrecto.", headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+router = APIRouter(dependencies=[Depends(demo_access)])
+DB = Annotated[Session, Depends(get_db)]
+AI = Annotated[object, Depends(get_ai)]
+
+
+@app.exception_handler(StaleDataError)
+@app.exception_handler(IntegrityError)
+async def conflict_handler(_request, _exception):
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": "La operación ya se procesó o cambió en otra petición. Recupera el estado actual antes de reintentar."
+        },
+    )
+
+
+@app.exception_handler(OperationalError)
+async def database_handler(_request, _exception):
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Base de datos no disponible. Comprueba la conexión y las migraciones."},
+    )
+
+
+@app.get("/health", tags=["system"])
+def health():
     return {"status": "ok"}
+
+
+@app.get("/ready", tags=["system"])
+def ready(db: DB):
+    db.execute(text("SELECT 1"))
+    db.execute(select(Profile.id).limit(1))
+    return {"status": "ready"}
+
+
+@router.get("/capabilities", tags=["system"])
+def capabilities():
+    s = get_settings()
+    return {
+        "demo_shared_profile": True,
+        "ai_configured": bool(s.gemini_api_key.get_secret_value()),
+        "ai_provider": "gemini",
+        "models": {
+            "text": s.gemini_model,
+            "audio": s.gemini_audio_model,
+            "speech": s.gemini_tts_model,
+        },
+        "models_verified": False,
+        "content_source": "sample",
+        "interview_durations": [3, 5, 10],
+        "max_audio_bytes": s.max_audio_bytes,
+        "audio_persisted": False,
+        "timezone": s.app_timezone,
+    }
+
+
+@router.get("/profile/options", tags=["profile"])
+def profile_options():
+    return {
+        "skills": SKILLS,
+        "interview_timeframes": [
+            {"label": "Hoy", "days": 0},
+            {"label": "En una semana", "days": 7},
+            {"label": "En dos semanas", "days": 14},
+            {"label": "En un mes", "days": 30},
+        ],
+        "daily_minutes": [3, 5, 10, 15, 20],
+        "strengths_and_improvement_areas_allow_custom_text": True,
+    }
+
+
+def profile_view(profile):
+    return {
+        "id": profile.id,
+        **profile.data,
+        "days_until_interview": (date.fromisoformat(profile.data["interview_date"]) - today()).days,
+        "created_at": profile.created_at,
+        "updated_at": profile.updated_at,
+    }
+
+
+@router.get("/profile", tags=["profile"])
+def read_profile(db: DB):
+    return profile_view(profile_or_404(db))
+
+
+@router.put("/profile", tags=["profile"])
+def save_profile(body: ProfileInput, db: DB):
+    target = body.interview_date or today() + timedelta(days=body.interview_in_days)
+    data = body.model_dump(mode="json", exclude={"interview_in_days", "interview_date"})
+    data["interview_date"] = target.isoformat()
+    item = db.get(Profile, "demo")
+    if item:
+        item.data = data
+        item.updated_at = now()
+    else:
+        item = Profile(id="demo", data=data)
+        db.add(item)
+    db.commit()
+    return profile_view(item)
+
+
+@router.post("/activities/daily", tags=["activities"])
+def daily_activity(db: DB, ai: AI):
+    profile = profile_or_404(db)
+    existing = db.scalar(
+        select(Activity).where(Activity.profile_id == profile.id, Activity.day == today())
+    )
+    if existing:
+        return activity_view(existing)
+    generated = ai.activity(ai_profile(profile), personalization(db))
+    item = Activity(profile_id=profile.id, day=today(), content=generated.model_dump())
+    db.add(item)
+    db.commit()
+    return activity_view(item)
+
+
+@router.get("/activities", tags=["activities"])
+def list_activities(db: DB, limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0)):
+    items = db.scalars(
+        select(Activity).order_by(Activity.day.desc()).offset(offset).limit(limit)
+    ).all()
+    return {
+        "items": [activity_view(x) for x in items],
+        "total": db.scalar(select(func.count()).select_from(Activity)),
+    }
+
+
+@router.get("/activities/{activity_id}", tags=["activities"])
+def read_activity(activity_id: str, db: DB):
+    return activity_view(activity_or_404(db, activity_id))
+
+
+@router.post("/activities/{activity_id}/answer", tags=["activities"])
+def answer_activity(activity_id: str, body: AnswerInput, db: DB, ai: AI):
+    item = activity_or_404(db, activity_id)
+    if item.completed_at:
+        if item.answer == body.answer:
+            return activity_view(item)
+        raise HTTPException(409, "La actividad ya está completada.")
+    feedback = ai.feedback(
+        ai_profile(profile_or_404(db)),
+        [{"id": item.id, "question": item.content, "answer": body.answer}],
+    )
+    item.answer, item.feedback, item.completed_at = body.answer, feedback.model_dump(), now()
+    db.commit()
+    return activity_view(item)
+
+
+@router.post("/interviews", status_code=201, tags=["interviews"])
+def start_interview(body: InterviewInput, db: DB, ai: AI):
+    profile = profile_or_404(db)
+    snapshot = ai_profile(profile)
+    question = ai.question(snapshot, [], personalization(db))
+    interview = Interview(
+        profile_id=profile.id,
+        duration_minutes=body.duration_minutes,
+        max_questions={3: 2, 5: 3, 10: 5}[body.duration_minutes],
+        profile_snapshot=snapshot,
+    )
+    interview.turns.append(InterviewTurn(position=1, question=question.model_dump()))
+    db.add(interview)
+    db.commit()
+    return interview_view(interview)
+
+
+@router.get("/interviews", tags=["interviews"])
+def list_interviews(db: DB, limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0)):
+    items = db.scalars(
+        select(Interview).order_by(Interview.created_at.desc()).offset(offset).limit(limit)
+    ).all()
+    return {
+        "items": [
+            {
+                "id": i.id,
+                "status": i.status,
+                "duration_minutes": i.duration_minutes,
+                "created_at": i.created_at,
+                "finished_at": i.finished_at,
+                "summary": i.feedback["summary"] if i.feedback else None,
+            }
+            for i in items
+        ],
+        "total": db.scalar(select(func.count()).select_from(Interview)),
+    }
+
+
+@router.get("/interviews/{interview_id}", tags=["interviews"])
+def read_interview(interview_id: str, db: DB):
+    return interview_view(interview_or_404(db, interview_id))
+
+
+@router.post("/interviews/{interview_id}/answers", tags=["interviews"])
+def answer_interview(interview_id: str, body: TurnAnswerInput, db: DB, ai: AI):
+    item = interview_or_404(db, interview_id)
+    turn = next((t for t in item.turns if t.id == body.turn_id), None)
+    if not turn:
+        raise HTTPException(404, "Turno no encontrado en esta entrevista.")
+    if turn.answer is not None:
+        if turn.answer == body.answer:
+            return interview_view(item)
+        raise HTTPException(409, "Este turno ya tiene una respuesta.")
+    if item.status != "active":
+        raise HTTPException(409, "La entrevista ya está terminada.")
+    turn.answer, turn.answered_at = body.answer, now()
+    if len(item.turns) < item.max_questions:
+        question = ai.question(
+            item.profile_snapshot, [turn_view(t) for t in item.turns], personalization(db)
+        )
+        item.turns.append(
+            InterviewTurn(position=len(item.turns) + 1, question=question.model_dump())
+        )
+    # Parent version protects answers/finish/delete from concurrent writes.
+    item.version += 1
+    db.commit()
+    return interview_view(item)
+
+
+@router.post("/interviews/{interview_id}/finish", tags=["interviews"])
+def finish_interview(interview_id: str, db: DB, ai: AI):
+    item = interview_or_404(db, interview_id)
+    if item.status == "completed":
+        return interview_view(item)
+    turns = [turn_view(t) for t in item.turns if t.answer is not None]
+    if not turns:
+        raise HTTPException(409, "Responde al menos una pregunta antes de terminar.")
+    item.feedback = ai.feedback(item.profile_snapshot, turns).model_dump()
+    item.status, item.finished_at = "completed", now()
+    db.commit()
+    return interview_view(item)
+
+
+@router.delete("/interviews/{interview_id}", status_code=204, tags=["interviews"])
+def delete_interview(interview_id: str, db: DB):
+    db.delete(interview_or_404(db, interview_id))
+    db.commit()
+    return Response(status_code=204)
+
+
+ALLOWED_AUDIO = {
+    "audio/wav",
+    "audio/x-wav",
+    "audio/mpeg",
+    "audio/mp3",
+    "audio/mp4",
+    "audio/m4a",
+    "audio/x-m4a",
+    "audio/aac",
+    "audio/ogg",
+    "audio/webm",
+    "audio/flac",
+    "video/webm",
+}
+MIME_NORMALIZATION = {
+    "audio/mp3": "audio/mpeg",
+    "audio/x-wav": "audio/wav",
+    "audio/m4a": "audio/mp4",
+    "audio/x-m4a": "audio/mp4",
+    "video/webm": "audio/webm",
+}
+
+
+@router.post("/interviews/{interview_id}/transcriptions", tags=["voice"])
+def transcribe_answer(interview_id: str, db: DB, ai: AI, file: Annotated[UploadFile, File()]):
+    try:
+        item = interview_or_404(db, interview_id)
+        if item.status != "active" or not any(t.answer is None for t in item.turns):
+            raise HTTPException(409, "No hay una pregunta pendiente en esta entrevista.")
+        mime = (file.content_type or "").split(";", 1)[0].strip().lower()
+        if mime not in ALLOWED_AUDIO:
+            raise HTTPException(415, "Formato de audio no admitido. Usa WAV, MP3, M4A, OGG o WebM.")
+        data = file.file.read(get_settings().max_audio_bytes + 1)
+        if not data:
+            raise HTTPException(422, "El audio está vacío.")
+        if len(data) > get_settings().max_audio_bytes:
+            raise HTTPException(413, "El audio supera el tamaño permitido.")
+        transcript = ai.transcribe(data, MIME_NORMALIZATION.get(mime, mime))
+        return {
+            "transcript": transcript,
+            "saved": False,
+            "source": "ai",
+            "next_step": "Revisa el texto y envíalo a POST /interviews/{id}/answers.",
+        }
+    finally:
+        file.file.close()
+
+
+@router.get("/interviews/{interview_id}/turns/{turn_id}/speech", tags=["voice"])
+def question_speech(interview_id: str, turn_id: str, db: DB, ai: AI):
+    item = interview_or_404(db, interview_id)
+    turn = next((t for t in item.turns if t.id == turn_id), None)
+    if not turn:
+        raise HTTPException(404, "Turno no encontrado.")
+    return Response(
+        ai.speech(turn.question["text"]),
+        media_type="audio/wav",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@router.get("/progress", tags=["progress"])
+def progress(db: DB):
+    activities = db.scalars(select(Activity).where(Activity.completed_at.is_not(None))).all()
+    interviews = db.scalars(select(Interview).where(Interview.status == "completed")).all()
+    counts = {s["id"]: 0 for s in SKILLS}
+    for a in activities:
+        counts[a.content["skill"]] += 1
+    for i in interviews:
+        for t in i.turns:
+            if t.answer is not None:
+                counts[t.question["skill"]] += 1
+    total = len(activities) + len(interviews)
+    milestones = [
+        {
+            "id": "first_activity",
+            "label": "Primera actividad",
+            "current": len(activities),
+            "target": 1,
+        },
+        {
+            "id": "first_interview",
+            "label": "Primera entrevista",
+            "current": len(interviews),
+            "target": 1,
+        },
+        {
+            "id": "five_practices",
+            "label": "Cinco prácticas completadas",
+            "current": total,
+            "target": 5,
+        },
+    ]
+    milestones += [
+        {
+            "id": "skill_" + s["id"],
+            "label": "Tres prácticas: " + s["label"],
+            "current": counts[s["id"]],
+            "target": 3,
+        }
+        for s in SKILLS
+    ]
+    for m in milestones:
+        m["achieved"] = m["current"] >= m["target"]
+    return {
+        "completed_activities": len(activities),
+        "completed_interviews": len(interviews),
+        "answered_interview_questions": sum(
+            sum(t.answer is not None for t in i.turns) for i in interviews
+        ),
+        "skills": [{**s, "practices": counts[s["id"]]} for s in SKILLS],
+        "milestones": milestones,
+        "recommendations": personalization(db),
+        "measurement": "Los hitos cuentan prácticas realizadas; no miden capacidad profesional.",
+    }
+
+
+@router.get("/news", tags=["content"])
+def news():
+    return {"source": "sample", "is_sample": True, "items": CONTENT["news"]}
+
+
+@router.get("/events", tags=["content"])
+def events():
+    return {"source": "sample", "is_sample": True, "items": CONTENT["events"]}
+
+
+@router.get("/wellbeing/activities", tags=["content"])
+def wellbeing():
+    return {
+        "source": "sample",
+        "is_sample": True,
+        "items": CONTENT["wellbeing"],
+        "description": "Apoyo general al bienestar; no es tratamiento terapéutico.",
+    }
+
+
+app.include_router(router)

@@ -1,0 +1,7 @@
+[
+  {"category":"soft_skills","skill":"self_presentation","reference":"Cuéntame qué has estudiado y qué experiencia o proyectos te preparan para este puesto."},
+  {"category":"technical","skill":"technical","reference":"Describe cómo abordarías un problema técnico relevante para el puesto al que aspiras."},
+  {"category":"professional_situation","skill":"communication","reference":"Has propuesto una idea en una reunión y la conversación ha seguido. ¿Cómo retomarías tu propuesta?"},
+  {"category":"soft_skills","skill":"teamwork","reference":"Describe un desacuerdo en un equipo y cómo contribuiste a resolverlo."},
+  {"category":"professional_situation","skill":"problem_solving","reference":"Te asignan una tarea desconocida con un plazo ajustado. ¿Cómo organizarías tus primeros pasos?"}
+]
