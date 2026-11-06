@@ -22,7 +22,7 @@ const sectors = ['Tecnología', 'Marketing', 'Finanzas', 'Educación y salud', '
 const purple = colors.plum;
 const sage = colors.sage;
 
-export default function OnboardingScreen({ onComplete, onSkip, startAtForm = false }: { onComplete: () => void; onSkip: () => void; startAtForm?: boolean }) {
+export default function OnboardingScreen({ onComplete, onSkip, startAtForm = false }: { onComplete: (sector: string) => void; onSkip: () => void; startAtForm?: boolean }) {
   const [page, setPage] = useState(startAtForm ? 2 : 1);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [age, setAge] = useState('');
@@ -31,7 +31,7 @@ export default function OnboardingScreen({ onComplete, onSkip, startAtForm = fal
   const toggleGoal = (goal: string) => setSelectedGoals(current => current.includes(goal) ? current.filter(item => item !== goal) : [...current, goal]);
   const goNext = () => setPage(current => Math.min(current + 1, 6));
   const isDisabled = (page === 2 && selectedGoals.length === 0) || (page === 4 && !time) || (page === 5 && !sector);
-  const next = () => page === 6 ? onComplete() : goNext();
+  const next = () => page === 6 ? onComplete(sector) : goNext();
 
   return (
     <View style={styles.root}>

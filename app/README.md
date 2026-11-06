@@ -92,3 +92,13 @@ Las entrevistas reales se guardan localmente con AsyncStorage en este dispositiv
 - Crear, consultar y modificar el perfil de la usuaria y recuperar los datos del onboarding: método, ruta y contrato por definir.
 - Crear, consultar y modificar entrevistas reales, fechas, ofertas, notas y feedback: métodos, rutas y contratos por definir.
 - Gestionar recordatorios y permisos de notificación, así como generar planes personalizados: métodos, rutas, canales y contratos por definir. Actualmente no se envían notificaciones ni se genera un plan con IA.
+
+
+## Noticias semanales
+
+Actualidad muestra noticias por sector y semana local de calendario (lunes incluido a lunes siguiente excluido). Si se completó el onboarding durante la sesión, se selecciona su sector; también se puede cambiar el filtro. La única noticia es ficticia: su fecha simulada se ajusta a la semana actual, por lo que no representa una publicación real. Los sectores sin ejemplo muestran un estado vacío.
+
+### Backend pendiente para noticias
+
+- Consultar noticias reales por sector y por intervalo de semana: método, ruta, fecha, zona horaria, fuente, enlaces y paginación por definir.
+- Persistir el sector elegido y actualizar la fuente semanalmente: contrato, frecuencia y política editorial por definir. Actualmente el sector del onboarding solo se conserva durante la sesión.
