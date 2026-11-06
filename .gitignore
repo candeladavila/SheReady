@@ -1,0 +1,9 @@
+# Python
+api/.venv/
+api/__pycache__/
+api/.pytest_cache/
+
+# Environment variables
+.env
+.env.*
+!.env.example
