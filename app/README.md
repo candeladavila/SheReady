@@ -54,7 +54,7 @@ Los colores de marca están centralizados en `src/theme/colors.ts`. Las nuevas p
 
 ## Navegación y demo de entrevista
 
-Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior. Las secciones distintas de la entrevista son provisionales.
+Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior. La entrevista y Actividades están disponibles como experiencias locales; las demás secciones son provisionales.
 
 La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). Antes de empezar permite elegir 5, 10 o 15 minutos; esta selección es orientativa y todavía no cambia la duración de la demo. No reproduce audio, no solicita el micrófono, no graba respuestas y no realiza análisis. Se usa el mismo [Strands de React Bits](https://www.reactbits.dev/animations/strands) en web y móvil; en Expo Go se ejecuta localmente en un WebView. Si el dispositivo no admite WebGL 2, se muestra una alternativa SVG. Tras cambiar Strands o la paleta, ejecuta `pnpm build:strands` para actualizar la versión integrada en móvil. El entrevistador es una ilustración vectorial animada, no un modelo 3D.
 
@@ -63,3 +63,11 @@ La entrevista es una demostración local de cuatro intervenciones (dos del entre
 - **Crear y conducir una sesión de práctica por voz**: método, ruta, autenticación, transporte y contrato por definir. Deberá gestionar los turnos y los permisos necesarios.
 - **Finalizar una entrevista y consultar su análisis**: método, ruta, datos enviados y estructura del resultado por definir. El botón de revisión muestra un estado informativo: la demo no inicia ningún análisis ni añade entrevistas al historial.
 - **Consultar el historial y el detalle de entrevistas**: métodos, rutas y respuestas por definir.
+
+## Actividades
+
+La sección Actividades incluye una práctica guiada de respiración de 1, 5 o 10 minutos, a elegir antes de empezar (5 segundos de inhalación, 2 de pausa opcional y 5 de exhalación; basado en una pauta del [NHS](https://www.cht.nhs.uk/fileadmin/contentUploads/Services/Clinical/Oncology_Cancer_Services/Oncology/Documents/Booklets/Lung_PA_booklet_FINAL_A5_19.07.22.pdf)), con pausa y salida. La selección musical es opcional y se abre en Spotify. La actividad se pausa cuando la aplicación pasa a segundo plano. No se guardan resultados ni se llama a la API.
+
+### Endpoints pendientes para actividades
+
+- **Consultar catálogo y registrar actividades completadas**: métodos, rutas, persistencia y contratos pendientes de definir.
