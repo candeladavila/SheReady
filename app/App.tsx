@@ -9,6 +9,6 @@ export default function App() {
   const [returnToProfile, setReturnToProfile] = useState(false);
   const [sector, setSector] = useState('');
   if (stage === 'launch') return <LaunchScreen onFinish={() => setStage('onboarding')} />;
-  if (stage === 'onboarding') return <OnboardingScreen startAtForm={returnToProfile} onComplete={selectedSector => { setSector(selectedSector); setCompletedOnboarding(true); setStage('app'); }} onSkip={() => setStage('app')} />;
+  if (stage === 'onboarding') return <OnboardingScreen startAtForm={returnToProfile} onComplete={selectedSector => { setSector(selectedSector); setCompletedOnboarding(true); setStage('app'); }} onSkip={selectedSector => { if (selectedSector) setSector(selectedSector); setStage('app'); }} />;
   return <AppShell selectedSector={sector} initialRoute={returnToProfile ? 'profile' : 'home'} completedOnboarding={completedOnboarding} onOpenOnboarding={() => { setReturnToProfile(true); setStage('onboarding'); }} />;
 }

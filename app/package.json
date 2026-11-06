@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "build:strands": "node scripts/build-strands.mjs"
+    "build:strands": "node scripts/build-strands.mjs",
+    "build:kokoro-bridge": "node scripts/build-kokoro-bridge.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
