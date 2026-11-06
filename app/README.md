@@ -82,3 +82,13 @@ La página de inicio usa un nombre y contenido de actualidad de ejemplo. La reco
 
 - **Perfil de la usuaria y recomendaciones de actividades**: métodos, rutas y contratos pendientes de definir.
 - **Noticias de actualidad**: fuentes, método, ruta y respuesta pendientes de definir.
+
+## Perfil y entrevistas reales
+
+El perfil y las entrevistas reales se guardan localmente con AsyncStorage en este dispositivo; no se sincronizan con una cuenta y el almacenamiento no está cifrado. Los datos introducidos en el onboarding aún no se transfieren al perfil. Desde Perfil o desde Entrevista se puede registrar una oferta (enlace o descripción), empresa, puesto, fecha y hora local, consultar la cuenta atrás, anotar recordatorios personales y añadir feedback tras la entrevista. El acceso a respiración abre la actividad con un minuto como opción inicial.
+
+### Endpoints pendientes de perfil y entrevistas reales
+
+- Crear, consultar y modificar el perfil de la usuaria y recuperar los datos del onboarding: método, ruta y contrato por definir.
+- Crear, consultar y modificar entrevistas reales, fechas, ofertas, notas y feedback: métodos, rutas y contratos por definir.
+- Gestionar recordatorios y permisos de notificación, así como generar planes personalizados: métodos, rutas, canales y contratos por definir. Actualmente no se envían notificaciones ni se genera un plan con IA.
