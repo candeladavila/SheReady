@@ -85,7 +85,7 @@ La página de inicio usa un nombre y contenido de actualidad de ejemplo. La reco
 
 ## Perfil y entrevistas reales
 
-El perfil y las entrevistas reales se guardan localmente con AsyncStorage en este dispositivo; no se sincronizan con una cuenta y el almacenamiento no está cifrado. Los datos introducidos en el onboarding aún no se transfieren al perfil. Desde Perfil o desde Entrevista se puede registrar una oferta (enlace o descripción), empresa, puesto, fecha y hora local, consultar la cuenta atrás, anotar recordatorios personales y añadir feedback tras la entrevista. El acceso a respiración abre la actividad con un minuto como opción inicial.
+Las entrevistas reales se guardan localmente con AsyncStorage en este dispositivo; no se sincronizan con una cuenta y el almacenamiento no está cifrado. El perfil permite retomar el onboarding si se ha saltado. El estado de finalización y las respuestas del onboarding solo duran durante la sesión; su persistencia está pendiente. Desde Perfil o desde Entrevista se puede registrar una oferta (enlace o descripción), empresa, puesto, fecha y hora local, consultar la cuenta atrás, anotar recordatorios personales y añadir feedback tras la entrevista. El acceso a respiración abre la actividad con un minuto como opción inicial.
 
 ### Endpoints pendientes de perfil y entrevistas reales
 
