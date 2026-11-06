@@ -84,6 +84,7 @@ def client(tmp_path, monkeypatch):
             yield db
 
     monkeypatch.setenv("DEMO_ACCESS_TOKEN", "")
+    monkeypatch.setenv("AI_PROVIDER", "gemini")
     monkeypatch.setenv("GEMINI_API_KEY", "")
     get_settings.cache_clear()
     fake = FakeAI()

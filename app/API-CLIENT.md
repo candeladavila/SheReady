@@ -30,6 +30,41 @@ Las variables `EXPO_PUBLIC_*` se incluyen en la aplicación y son públicas: **n
 la clave de Gemini ni un token secreto. Para una futura sesión se puede crear el cliente con
 `createApiClient({ baseUrl, getToken })`; conectar ese proveedor no implementa autenticación.
 
-Las pantallas actuales aún utilizan datos locales. Deben conectarse de forma incremental a
-este cliente y adaptar sus campos al contrato de `api/FRONTEND.md`; en particular, el perfil
-del backend exige edad, puesto, experiencia, fortalezas, mejoras y fecha de entrevista.
+## Integración sin rediseño
+
+Se conserva el layout y los estilos originales. Inicio carga noticias en el espacio
+existente; las prácticas de bienestar registran su finalización sin añadir tarjetas.
+El menú y las animaciones de entrevista son los originales, con sus controles conectados
+al backend. El historial abre el análisis dentro de la pantalla de revisión existente.
+No se han añadido campos al onboarding visual ni se inventan los datos que faltan: por
+ahora el perfil completo del backend debe existir antes de empezar (PUT /profile en /docs).
+
+## IA local
+
+El backend admite AI_PROVIDER=ollama y OLLAMA_MODEL=qwen3:4b. Los endpoints de preguntas,
+actividades y feedback conservan el mismo contrato. Qwen procesa texto: el modo Ollama
+actual devuelve un error explícito en transcripción y síntesis de voz, sin enviar nada
+a Gemini. Falta configurar motores de audio locales antes de usar entrevistas por voz.
+PostgreSQL sigue requiriendo una instancia accesible y migraciones aplicadas. La voz de
+la interfaz no debe confundirse con las preguntas de texto ya generadas por Ollama.
+
+
+### Expo Go en móvil físico
+
+La configuración local apunta ahora a `http://192.168.1.141:8000`. El móvil y el
+ordenador deben estar en la misma Wi-Fi. Al cambiar la IP o EXPO_PUBLIC_API_URL, reinicia
+Expo con `pnpm exec expo start --clear --lan`. Para publicar la API solo en esa IP:
+`cd api` y `./start-local.ps1 -BindAddress 192.168.1.141`. La IP puede cambiar al cambiar
+de red; en ese caso actualiza la variable y el parámetro. Comprueba `/ready` desde el
+navegador del móvil antes de probar la app. No uses localhost para acceder al ordenador
+desde un teléfono.
+
+
+### Audio local operativo en Windows
+
+Ollama genera el texto; Windows System.Speech sintetiza la voz española y Whisper base
+transcribe las grabaciones en el ordenador. El cliente espera a que termine la pregunta
+antes de activar el micrófono. Los modelos se descargan durante la configuración;
+las grabaciones no se envían a Gemini. La calidad de reconocimiento puede variar según
+el ruido, la pronunciación y los términos técnicos. La prueba desde un móvil físico
+sigue siendo necesaria para validar permisos, altavoz y micrófono del dispositivo.

@@ -1,7 +1,7 @@
 /** Cliente compartido para la API de SheReady. No incluyas claves de proveedor aquí. */
 export type Skill = 'technical' | 'communication' | 'teamwork' | 'problem_solving' | 'self_presentation';
 export type Category = 'technical' | 'professional_situation' | 'soft_skills';
-export type Duration = 3 | 5 | 10;
+export type Duration = 3 | 5 | 10 | 15;
 
 type ProfileFields = {
   age: number;
@@ -45,7 +45,7 @@ export type Interview = {
 export type InterviewSummary = Pick<Interview, 'id' | 'status' | 'duration_minutes' | 'created_at' | 'finished_at'> & { summary: string | null };
 export type Page<T> = { items: T[]; total: number };
 export type Progress = {
-  completed_activities: number; completed_interviews: number; answered_interview_questions: number;
+  completed_wellbeing?: number; completed_activities: number; completed_interviews: number; answered_interview_questions: number;
   skills: { id: Skill; label: string; practices: number }[];
   milestones: { id: string; label: string; current: number; target: number; achieved: boolean }[];
   recommendations: Feedback[]; measurement: string;
@@ -73,7 +73,7 @@ type Options = { baseUrl: string; getToken?: () => string | null | Promise<strin
 type RequestOptions = { method?: 'GET' | 'POST' | 'PUT' | 'DELETE'; json?: unknown; form?: FormData; response?: 'json' | 'blob' | 'empty'; signal?: AbortSignal };
 
 /** Se puede pasar un proveedor de token en el futuro sin cambiar las pantallas. */
-export function createApiClient({ baseUrl, getToken, timeoutMs = 90_000 }: Options) {
+export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000 }: Options) {
   const root = baseUrl.trim().replace(/\/+$/, '');
 
   async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -115,6 +115,45 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 90_000 }: Optio
     }
   }
 
+  async function transcribeNative(interviewId: string, audio: NativeAudio) {
+    if (!/^https?:\/\//i.test(root)) throw new ApiError(null, 'Configura EXPO_PUBLIC_API_URL.');
+    const fs = await import('expo-file-system/legacy');
+    const info = await fs.getInfoAsync(audio.uri);
+    if (!info.exists || info.isDirectory || info.size === 0) {
+      throw new ApiError(null, 'La grabación está vacía o no está disponible. Graba de nuevo.');
+    }
+    if (info.size > 8 * 1024 * 1024) throw new ApiError(413, 'La grabación supera los 8 MiB. Reduce su duración.');
+    const token = await getToken?.();
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const task = fs.createUploadTask(`${root}/interviews/${encodeURIComponent(interviewId)}/transcriptions`, audio.uri, {
+      httpMethod: 'POST', uploadType: fs.FileSystemUploadType.MULTIPART,
+      fieldName: 'file', mimeType: audio.type, headers,
+    });
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; void task.cancelAsync().catch(() => {}); }, timeoutMs);
+    try {
+      const response = await task.uploadAsync();
+      if (timedOut) throw new ApiError(null, 'La subida de la grabación ha tardado demasiado. Puedes reintentar.');
+      if (!response) throw new ApiError(null, 'La subida de la grabación se ha cancelado. Puedes reintentar.');
+      let data: { detail?: unknown; transcript?: string; saved?: boolean; source?: string; next_step?: string };
+      try { data = JSON.parse(response.body); }
+      catch { throw new ApiError(response.status, 'El servidor no devolvió una transcripción válida.'); }
+      if (response.status < 200 || response.status >= 300) {
+        throw new ApiError(response.status, typeof data.detail === 'string' ? data.detail : `No se pudo transcribir (${response.status}).`, data.detail);
+      }
+      if (typeof data.transcript !== 'string' || !data.transcript.trim() || data.saved !== false) {
+        throw new ApiError(response.status, 'El servidor devolvió una transcripción incompleta.');
+      }
+      return data as { transcript: string; saved: false; source: 'ai'; next_step: string };
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      if (timedOut) throw new ApiError(null, 'La subida de la grabación ha tardado demasiado. Puedes reintentar.');
+      throw new ApiError(null, 'No se pudo subir la grabación desde el móvil. Se conserva para que puedas reintentar.');
+    } finally { clearTimeout(timer); }
+  }
+
+
   const id = encodeURIComponent;
   const page = (limit = 20, offset = 0) => `?limit=${limit}&offset=${offset}`;
   return {
@@ -138,12 +177,14 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 90_000 }: Optio
       delete: (interviewId: string) => request<void>(`/interviews/${id(interviewId)}`, { method: 'DELETE', response: 'empty' }),
       speech: (interviewId: string, turnId: string) => request<Blob>(`/interviews/${id(interviewId)}/turns/${id(turnId)}/speech`, { response: 'blob' }),
       transcribe: (interviewId: string, audio: Blob | NativeAudio, filename = 'respuesta.webm') => {
+        if ('uri' in audio) return transcribeNative(interviewId, audio);
         const form = new FormData();
-        if (audio instanceof Blob) form.append('file', audio, filename);
+        if (typeof Blob !== 'undefined' && audio instanceof Blob) form.append('file', audio, filename);
         else form.append('file', audio as unknown as Blob); // React Native admite {uri, name, type} en FormData.
         return request<{ transcript: string; saved: false; source: 'ai'; next_step: string }>(`/interviews/${id(interviewId)}/transcriptions`, { method: 'POST', form });
       },
     },
+    wellbeingComplete: (body: { id: string; kind: 'breathing' | 'confidence'; duration_seconds: number }) => request<{ id: string }>('/wellbeing/completions', { method: 'POST', json: body }),
     progress: () => request<Progress>('/progress'),
     news: () => request<SampleContent<NewsItem>>('/news'),
     events: () => request<SampleContent<EventItem>>('/events'),

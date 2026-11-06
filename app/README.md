@@ -1,3 +1,8 @@
+> Integración actual: Inicio, entrevista y bienestar ya usan el cliente de API.
+> Consulta [API-CLIENT.md](API-CLIENT.md) para el contrato y el arranque actualizado.
+> Los apartados antiguos de endpoints pendientes describen la maqueta anterior y se
+> conservan como contexto de diseño; la referencia vigente es API-CLIENT.md.
+
 # SheReady App
 
 Aplicación móvil de SheReady, creada con React Native, Expo y TypeScript.
@@ -54,17 +59,11 @@ Los colores de marca están centralizados en `src/theme/colors.ts`. Las nuevas p
 
 ## Navegación y demo de entrevista
 
-Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior. La entrevista y Actividades están disponibles como experiencias locales; las demás secciones son provisionales.
+Tras el onboarding se muestra la navegación principal: en móvil, una barra inferior de iconos con etiquetas accesibles; en pantallas anchas, una barra superior.
 
-La entrevista es una demostración local de cuatro intervenciones (dos del entrevistador y dos de la usuaria). La duración seleccionada es orientativa. Utiliza Kokoro 82M con la voz masculina española `em_alex`: genera el audio en el dispositivo a partir del texto sin enviar las preguntas a ningún servicio de voz. La primera vez necesita descargar automáticamente el modelo (aprox. 92 MB), la voz, el motor ONNX y eSpeak-NG desde Hugging Face y jsDelivr; requiere conexión y puede tardar. Estos recursos pueden quedar en la caché del navegador, aunque su conservación depende de este. No se necesita API key. En móvil utiliza un WebView integrado en Expo Go para ejecutar el mismo motor; esta integración necesita verificarse en dispositivos iOS y Android reales. Si falla la carga o la reproducción se puede continuar sin audio. No se solicita el micrófono ni se graban respuestas.
+La entrevista utiliza el cliente de API: crea una sesión, reproduce las preguntas servidas por el backend, solicita acceso al micrófono y envía las respuestas grabadas para su transcripción. Al finalizar, consulta el informe y permite revisar el historial. Configura `EXPO_PUBLIC_API_URL` como se explica en [API-CLIENT.md](API-CLIENT.md). Las ilustraciones animadas representan los turnos del entrevistador y de la usuaria.
 
-Kokoro está disponible bajo Apache-2.0; el procesador de pronunciación eSpeak-NG se distribuye bajo GPL-3.0-or-later. Consulta las licencias de los componentes antes de distribuirlos junto a la aplicación. La implementación usa versiones fijadas y descarga los recursos de terceros durante la ejecución.
-
-### Endpoints pendientes para entrevistas
-
-- **Crear y conducir una sesión de práctica por voz**: método, ruta, autenticación, transporte y contrato por definir. Deberá gestionar los turnos y los permisos necesarios.
-- **Finalizar una entrevista y consultar su análisis**: método, ruta, datos enviados y estructura del resultado por definir. El botón de revisión muestra un estado informativo: la demo no inicia ningún análisis ni añade entrevistas al historial.
-- **Consultar el historial y el detalle de entrevistas**: métodos, rutas y respuestas por definir.
+Los módulos de Kokoro de la demostración anterior se conservan en el proyecto, pero esta pantalla utiliza actualmente el audio proporcionado por el backend.
 
 ## Actividades
 

@@ -71,3 +71,14 @@ class InterviewTurn(Base):
     question: Mapped[dict] = mapped_column(JSON)
     answer: Mapped[str | None] = mapped_column(Text)
     answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class WellbeingCompletion(Base):
+    __tablename__ = "wellbeing_completions"
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    profile_id: Mapped[str] = mapped_column(
+        ForeignKey("profiles.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(30))
+    duration_seconds: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

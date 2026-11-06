@@ -171,3 +171,14 @@ Si falla la creación de la siguiente pregunta, la respuesta no queda confirmada
 el mismo texto y turn_id. Si la respuesta del servidor se pierde después del guardado,
 repetir exactamente ese envío devuelve el estado actual sin duplicar el turno.
 El backend no reintenta solicitudes de IA automáticamente.
+
+
+## Finalización de bienestar
+
+`POST /wellbeing/completions` recibe:
+`{"id":"identificador-unico-del-intento","kind":"breathing","duration_seconds":60}`.
+También admite kind="confidence" y duración 0 si la reflexión no tiene temporizador.
+Reutiliza el mismo id al reintentar para evitar contar dos veces una práctica. Devuelve
+el registro guardado; un id reutilizado con datos distintos devuelve 409. Requiere perfil.
+`GET /progress` incluye ahora `completed_wellbeing`, separado de las actividades de IA.
+Las frases personales de «mini yo» no se envían ni se guardan en este endpoint.

@@ -1,11 +1,12 @@
 from datetime import date, timedelta
 from secrets import compare_digest
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
@@ -16,7 +17,7 @@ from config import get_settings
 from content import CONTENT, SKILLS
 from database import get_db
 from middleware import BodyLimitMiddleware
-from models import Activity, Interview, InterviewTurn, Profile, now
+from models import Activity, Interview, InterviewTurn, Profile, WellbeingCompletion, now
 from schemas import AnswerInput, InterviewInput, ProfileInput, TurnAnswerInput
 from services import (
     activity_or_404,
@@ -97,16 +98,18 @@ def capabilities():
     s = get_settings()
     return {
         "demo_shared_profile": True,
-        "ai_configured": bool(s.gemini_api_key.get_secret_value()),
-        "ai_provider": "gemini",
+        "ai_configured": bool(s.gemini_api_key.get_secret_value())
+        if s.ai_provider == "gemini"
+        else True,
+        "ai_provider": s.ai_provider,
         "models": {
-            "text": s.gemini_model,
-            "audio": s.gemini_audio_model,
-            "speech": s.gemini_tts_model,
+            "text": s.ollama_model if s.ai_provider == "ollama" else s.gemini_model,
+            "audio": s.gemini_audio_model if s.ai_provider == "gemini" else "whisper-base-local",
+            "speech": s.gemini_tts_model if s.ai_provider == "gemini" else "windows-speech-es",
         },
         "models_verified": False,
         "content_source": "sample",
-        "interview_durations": [3, 5, 10],
+        "interview_durations": [3, 5, 10, 15],
         "max_audio_bytes": s.max_audio_bytes,
         "audio_persisted": False,
         "timezone": s.app_timezone,
@@ -214,7 +217,7 @@ def start_interview(body: InterviewInput, db: DB, ai: AI):
     interview = Interview(
         profile_id=profile.id,
         duration_minutes=body.duration_minutes,
-        max_questions={3: 2, 5: 3, 10: 5}[body.duration_minutes],
+        max_questions={3: 2, 5: 3, 10: 5, 15: 7}[body.duration_minutes],
         profile_snapshot=snapshot,
     )
     interview.turns.append(InterviewTurn(position=1, question=question.model_dump()))
@@ -401,6 +404,7 @@ def progress(db: DB):
     for m in milestones:
         m["achieved"] = m["current"] >= m["target"]
     return {
+        "completed_wellbeing": db.scalar(select(func.count()).select_from(WellbeingCompletion)),
         "completed_activities": len(activities),
         "completed_interviews": len(interviews),
         "answered_interview_questions": sum(
@@ -431,6 +435,32 @@ def wellbeing():
         "items": CONTENT["wellbeing"],
         "description": "Apoyo general al bienestar; no es tratamiento terapéutico.",
     }
+
+
+class WellbeingInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str = Field(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_-]+$")
+    kind: Literal["breathing", "confidence"]
+    duration_seconds: int = Field(ge=0, le=7200)
+
+
+@router.post("/wellbeing/completions", tags=["wellbeing"])
+def complete_wellbeing(body: WellbeingInput, db: DB):
+    profile = profile_or_404(db)
+    item = db.get(WellbeingCompletion, body.id)
+    if item:
+        if item.kind != body.kind or item.duration_seconds != body.duration_seconds:
+            raise HTTPException(409, "El registro ya existe con otros datos.")
+    else:
+        item = WellbeingCompletion(
+            id=body.id,
+            profile_id=profile.id,
+            kind=body.kind,
+            duration_seconds=body.duration_seconds,
+        )
+        db.add(item)
+        db.commit()
+    return {"id": item.id, "kind": item.kind, "created_at": item.created_at}
 
 
 app.include_router(router)
