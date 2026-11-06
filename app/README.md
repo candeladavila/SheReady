@@ -66,8 +66,10 @@ La entrevista es una demostración local de cuatro intervenciones (dos del entre
 
 ## Actividades
 
-La sección Actividades incluye una práctica guiada de respiración de 1, 5 o 10 minutos, a elegir antes de empezar (5 segundos de inhalación, 2 de pausa opcional y 5 de exhalación; basado en una pauta del [NHS](https://www.cht.nhs.uk/fileadmin/contentUploads/Services/Clinical/Oncology_Cancer_Services/Oncology/Documents/Booklets/Lung_PA_booklet_FINAL_A5_19.07.22.pdf)), con pausa y salida. La selección musical es opcional y se abre en Spotify. La actividad se pausa cuando la aplicación pasa a segundo plano. No se guardan resultados ni se llama a la API.
+La sección Actividades agrupa las actividades diarias y muestra un espacio para futuros planes personalizados de preparación de entrevistas con IA, todavía sin implementar. Incluye una práctica guiada de respiración de 1, 5 o 10 minutos, a elegir antes de empezar (5 segundos de inhalación, 2 de pausa opcional y 5 de exhalación; basado en una pauta del [NHS](https://www.cht.nhs.uk/fileadmin/contentUploads/Services/Clinical/Oncology_Cancer_Services/Oncology/Documents/Booklets/Lung_PA_booklet_FINAL_A5_19.07.22.pdf)), con pausa y salida. La selección musical es opcional y se abre en Spotify. La actividad se pausa cuando la aplicación pasa a segundo plano. No se guardan resultados ni se llama a la API.
 
 ### Endpoints pendientes para actividades
 
 - **Consultar catálogo y registrar actividades completadas**: métodos, rutas, persistencia y contratos pendientes de definir.
+
+«Para mi mini yo» permite guardar y eliminar frases localmente en el dispositivo mediante AsyncStorage; no se sincronizan con el servidor. «Mi evidencia de confianza» guía una reflexión de cuatro pasos y mantiene las respuestas solo mientras la actividad está abierta. Ninguna de las dos requiere API.

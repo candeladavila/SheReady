@@ -6,9 +6,9 @@ import VoiceInterviewScreen from '../screens/VoiceInterviewScreen';
 import ActivitiesScreen from '../screens/ActivitiesScreen';
 import { colors } from '../theme/colors';
 
-type Route = 'home' | 'practice' | 'activities' | 'news' | 'calendar' | 'profile';
+type Route = 'home' | 'practice' | 'activities' | 'news' | 'profile';
 const tabs: { id: Route; label: string }[] = [
-  { id: 'home', label: 'Inicio' }, { id: 'practice', label: 'Entrevista' }, { id: 'activities', label: 'Actividades' }, { id: 'news', label: 'Actualidad' }, { id: 'calendar', label: 'Entrevistas' }, { id: 'profile', label: 'Mi perfil' },
+  { id: 'home', label: 'Inicio' }, { id: 'practice', label: 'Entrevista' }, { id: 'activities', label: 'Actividades' }, { id: 'news', label: 'Actualidad' }, { id: 'profile', label: 'Mi perfil' },
 ];
 function Icon({ name, active }: { name: Route; active: boolean }) {
   const color = active ? colors.plum : colors.mutedText;
@@ -17,7 +17,6 @@ function Icon({ name, active }: { name: Route; active: boolean }) {
     {name === 'practice' && <><Rect x="8" y="3" width="8" height="12" rx="4" /><Path d="M5 11a7 7 0 0 0 14 0M12 18v3m-3 0h6" /></>}
     {name === 'activities' && <><Circle cx="12" cy="12" r="8" /><Path d="M8 13c1-3 3-4 4-4s3 1 4 4M9 16h6" /></>}
     {name === 'news' && <><Rect x="3" y="4" width="18" height="16" rx="2" /><Path d="M7 8h4v4H7zM14 8h3M14 11h3M7 16h10" /></>}
-    {name === 'calendar' && <><Rect x="3" y="5" width="18" height="16" rx="2" /><Path d="M7 3v4m10-4v4M3 10h18M8 14h2m4 0h2m-8 3h2" /></>}
     {name === 'profile' && <><Circle cx="12" cy="8" r="4" /><Path d="M4 21a8 8 0 0 1 16 0" /></>}
   </Svg>;
 }
