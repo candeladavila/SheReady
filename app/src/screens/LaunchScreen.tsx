@@ -66,12 +66,10 @@ export default function LaunchScreen({ onFinish }: Props) {
         <Animated.View style={[styles.logo, { width: 140 * scale, height: 140 * scale, transform: [{ translateX: shift.interpolate({ inputRange: [0, 1], outputRange: [75 * scale, 0] }) }] }]}>
           <Svg width={140 * scale} height={140 * scale} viewBox="0 0 600 600">
             <Defs>
-              <LinearGradient id="launchPlum" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#603162" /><Stop offset="1" stopColor="#4C254C" /></LinearGradient>
               <LinearGradient id="launchCream" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#FFFBF6" /><Stop offset="1" stopColor="#F3E8E2" /></LinearGradient>
               <LinearGradient id="launchBase" x1="0" y1="0" x2="1" y2="0.8"><Stop offset="0" stopColor="#E6D1EE" /><Stop offset="1" stopColor="#BFA1D8" /></LinearGradient>
               <LinearGradient id="launchFront" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#C39BD4" /><Stop offset="1" stopColor="#A47AB7" /></LinearGradient>
             </Defs>
-            <Rect x="18" y="18" width="564" height="564" rx="145" fill="url(#launchPlum)" />
             <LogoGroup value={steps}>
               <Path d="M150 415 H210 V373 Q210 341 242 341 H321 V311 Q321 280 352 280 H434 Q463 280 463 308 V484 Q463 500 447 500 H123 Q108 500 108 485 V459 Q108 415 150 415 Z" fill="url(#launchCream)" />
               <Path d="M150 415 H329 Q354 415 354 442 V500 H123 Q108 500 108 485 V458 Q108 415 150 415 Z" fill="url(#launchBase)" />
