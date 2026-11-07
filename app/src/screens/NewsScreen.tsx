@@ -8,7 +8,7 @@ type Props = { initialSector?: string };
 const format = (value: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' }).format(new Date(value));
 export default function NewsScreen({ initialSector }: Props) {
   const [sector, setSector] = useState<string>(newsSectors.find(x => x === initialSector) ?? 'Otro sector');
-  const [city, setCity] = useState('Málaga');
+  const city = 'Málaga';
   const [kind, setKind] = useState<'Todos' | 'Noticias' | 'Eventos'>('Todos');
   const [news, setNews] = useState<ContentFeed<NewsItem> | null>(null);
   const [events, setEvents] = useState<ContentFeed<EventItem> | null>(null);
@@ -30,20 +30,17 @@ export default function NewsScreen({ initialSector }: Props) {
     <Text style={styles.lead}>Noticias y oportunidades para seguir avanzando.</Text>
     <Text style={styles.section}>ELIGE TU SECTOR</Text><View style={styles.filters}>{['Todos', ...newsSectors].map(value => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: sector === value }} onPress={() => setSector(value)} style={[styles.filter, sector === value && styles.active]}><Text style={[styles.filterText, sector === value && styles.activeText]}>{value}</Text></Pressable>)}</View>
     <Text style={styles.section}>TIPO DE CONTENIDO</Text><View accessibilityRole="radiogroup" style={styles.filters}>{(['Todos', 'Noticias', 'Eventos'] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: kind === value }} onPress={() => setKind(value)} style={[styles.filter, kind === value && styles.active]}><Text style={[styles.filterText, kind === value && styles.activeText]}>{value}</Text></Pressable>)}</View>
-    {kind !== 'Noticias' && <><Text style={styles.section}>CIUDAD DE LOS EVENTOS</Text><View style={styles.filters}>{['Málaga', 'Madrid'].map(value => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: city === value }} onPress={() => setCity(value)} style={[styles.filter, city === value && styles.active]}><Text style={[styles.filterText, city === value && styles.activeText]}>{value}</Text></Pressable>)}</View></>}
     <Text style={styles.section}>NOTICIAS Y EVENTOS</Text>
     {kind !== 'Noticias' && city === 'Málaga' && (sector === 'Todos' || sector === 'Tecnología') && <View style={styles.card}><Text style={styles.pill}>EVENTO</Text><Text style={styles.tag}>Málaga · Tecnología</Text><Text style={styles.cardTitle}>2ª Hackathona de Yes We Tech</Text><Text style={styles.description}>Dos días para crear proyectos con impacto en el ecosistema tecnológico de Málaga.</Text><Text style={styles.meta}>6 y 7 de noviembre de 2026 · GSEC (Google), Málaga</Text><Text style={styles.meta}>{new Date() >= new Date('2026-11-08T00:00:00+01:00') ? 'Evento celebrado' : 'Consulta el estado y el horario en la fuente oficial'}</Text><Pressable accessibilityRole="link" onPress={() => void Linking.openURL('https://www.yeswetech.org/eventos/hackathon-2026/')}><Text style={styles.link}>Ver evento original ↗</Text></Pressable></View>}
     {kind !== 'Eventos' && (error ? <Text style={styles.message}>{error}</Text> : !news ? <ActivityIndicator /> : <>
-      {!!news.message && <Text style={styles.message}>{news.message}</Text>}
+      {news.status !== 'curated' && !!news.message && <Text style={styles.message}>{news.message}</Text>}
       {news.status === 'ok' && !news.items.length && <Text style={styles.message}>No hay noticias disponibles para este sector.</Text>}
-      {news.updated_at && <Text style={styles.meta}>Actualizado: {format(news.updated_at)}</Text>}
       {news.items.map(item => <View key={item.id} style={styles.card}><Text style={styles.pill}>NOTICIA</Text><Text style={styles.tag}>{item.sectors.join(' · ')}</Text><Text style={styles.cardTitle}>{item.title}</Text><Text style={styles.description}>{item.description || 'Descripción no disponible.'}</Text><Text style={styles.meta}>{item.publisher || 'Medio no indicado'}{item.author ? ` · ${item.author}` : ''}{item.published_at ? ` · ${format(item.published_at)}` : " · Selección editorial"} · {item.language.toUpperCase()}</Text><Pressable accessibilityRole="link" onPress={() => void Linking.openURL(item.url)}><Text style={styles.link}>Leer en la fuente original ↗</Text></Pressable></View>)}
     </>)}
 
     {kind !== 'Noticias' && (!events ? <ActivityIndicator /> : <>
       {!!events.message && <Text style={styles.message}>{events.message}</Text>}
       {events.status === 'ok' && !events.items.length && <Text style={styles.message}>No hay eventos próximos para estos filtros.</Text>}
-      {events.updated_at && <Text style={styles.meta}>Actualizado: {format(events.updated_at)}</Text>}
       {events.items.map(item => <View key={item.id} style={styles.card}><Text style={styles.pill}>EVENTO</Text><Text style={styles.tag}>{item.city} · {item.sectors.join(' · ')}</Text><Text style={styles.cardTitle}>{item.title}</Text><Text style={styles.description}>{item.description || 'Consulta los detalles en la fuente.'}</Text><Text style={styles.meta}>{format(item.starts_at)} · {item.location || item.city}{item.address ? ` · ${item.address}` : ''}</Text><Text style={styles.meta}>{item.organizer || item.source} · {item.source} · {item.license} (datos adaptados)</Text><Pressable accessibilityRole="link" onPress={() => void Linking.openURL(item.url)}><Text style={styles.link}>Ver evento original ↗</Text></Pressable><Pressable accessibilityRole="link" onPress={() => void Linking.openURL(item.license_url)}><Text style={styles.link}>Licencia CC BY 4.0 ↗</Text></Pressable></View>)}
     </>)}
   </View></ScrollView>;
