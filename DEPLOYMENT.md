@@ -1,7 +1,7 @@
 # Publicación de la demo en Vercel
 
 Web de producción y URL para la tarjeta NFC: https://sheready.vercel.app
-API de producción: https://sheready-api.vercel.app
+API de producción: https://sheready-ywt-api.vercel.app
 Proyecto PostgreSQL: `vsdbppmgbytyuyqgknfr` (SheReady, Supabase, Londres).
 
 Se crean dos proyectos del mismo repositorio: la web con raíz `app/` y FastAPI con raíz
@@ -39,7 +39,7 @@ un preview también modifica la base a la que apunte `DATABASE_URL`.
 ## Web
 
 El proyecto con raíz `app/` instala el lockfile de pnpm y ejecuta `scripts/export-web.mjs`.
-Solo necesita `EXPO_PUBLIC_API_URL=https://<dominio-estable-de-la-api>`. El script rechaza
+Solo necesita `EXPO_PUBLIC_API_URL=https://sheready-ywt-api.vercel.app`. El script rechaza
 direcciones HTTP/locales y desactiva la carga del `.env` del ordenador al exportar.
 El directorio publicado es `dist/`. Las rutas de la SPA vuelven a `index.html`.
 
