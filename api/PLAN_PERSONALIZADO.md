@@ -51,7 +51,7 @@ El contrato completo y sus restricciones se definen en [`schemas.py`](schemas.py
 
 **Ejemplo abreviado:** para ser válido debe contener exactamente **tres simulacros en cada una de las cuatro listas** y **tres actividades**. Las preguntas por simulacro son respectivamente 1, 3, 5 y 7. Las modalidades de 5, 10 y 15 minutos son orientativas. Cada pregunta incluye texto, habilidad y categoría; cada actividad incluye tipo, título, descripción, objetivo, área, habilidad, duración, instrucciones, preguntas y color liso de la paleta. La IA no genera iconos.
 
-La respuesta se devuelve al cliente, pero aún **no se guarda como plan**, no crea las actividades en la base de datos y no alimenta los simulacros existentes. Tampoco existe todavía una cuenta individual ni un fichero de contexto sincronizado; el frontend de onboarding conserva sus respuestas localmente. La selección cíclica por persona y puesto sigue pendiente. El límite de tokens y el rendimiento dependen del modelo configurado; no se ha probado una generación real con credenciales.
+El flujo autenticado guarda la entrevista inicial y su contexto mediante `PUT /profile/initial-interview`. `POST /role-plans` crea y guarda un único plan por cuenta y puesto; `GET /role-plans` recupera los planes propios. Si la generación falla, se puede reintentar; una generación en curso no se duplica. Tras diez minutos un intento abandonado se puede recuperar. La presentación de las actividades generadas y la selección cíclica de simulacros siguen pendientes. El límite de tokens y el rendimiento dependen del modelo configurado; no se ha probado una generación real con credenciales.
 
 ## Modalidad de una pregunta
 
@@ -69,4 +69,4 @@ El cliente presenta el mismo cuestionario a todas: satisfacción elegida por la 
 }
 ```
 
-`satisfaction` es un entero de 1 a 5; `checkpoints` puede estar vacío y admite `explained_experience`, `gave_example`, `asked_question`, `discussed_role` y `explained_interest`, sin duplicados; `reflection` puede estar vacío. Es una autoevaluación, no una verificación automática de hechos. El backend define `ExitReflection` para validar el contrato, pero todavía no hay endpoint de sincronización ni almacenamiento de estas respuestas en el servidor. No se ha diseñado ningún JSON nuevo de feedback.
+`satisfaction` es un entero de 1 a 5; `checkpoints` puede estar vacío y admite `explained_experience`, `gave_example`, `asked_question`, `discussed_role` y `explained_interest`, sin duplicados; `reflection` puede estar vacío. Es una autoevaluación, no una verificación automática de hechos. El backend define `ExitReflection` para validar el contrato, pero todavía no hay endpoint de sincronización ni almacenamiento de estas respuestas en el servidor. El JSON nuevo de feedback sigue pendiente de las plantillas.

@@ -13,7 +13,7 @@ from google.genai import errors, types
 from pydantic import ValidationError
 
 from config import get_settings
-from schemas import Feedback, GeneratedActivity, PersonalizedPlan, Question
+from schemas import Feedback, GeneratedActivity, InitialProfileContext, PersonalizedPlan, Question
 
 BANK = json.loads((Path(__file__).parent / "data/question_bank.json").read_text(encoding="utf-8"))
 SYSTEM = """Eres la entrevistadora de práctica de SheReady. Habla siempre en español con tono
@@ -83,13 +83,23 @@ class GeminiProvider:
 
         return self._run(call)
 
+    def initial_profile(self, answers, onboarding):
+        return self.structured(
+            InitialProfileContext,
+            'A partir de las respuestas declaradas, resume fortalezas observables, aspectos '
+            'que la usuaria desea practicar y preferencias para acompañarla. No hagas '
+            'diagnósticos ni afirmaciones sobre personalidad, ni inventes experiencias. '
+            'Usa un lenguaje respetuoso y constructivo en español.',
+            {'answers': answers, 'onboarding': onboarding},
+        )
+
     def plan(self, context, target_role):
         return self.structured(
             PersonalizedPlan,
             "Genera un plan de práctica personalizado en español a partir del contexto y el puesto. "
             "Devuelve exactamente tres simulacros diferentes en cada categoría: single_question con "
             "una pregunta, five_minutes con tres, ten_minutes con cinco y fifteen_minutes con siete. "
-            "Además, genera exactamente tres actividades escritas concretas para trabajar las áreas de mejora. "
+            "Además, genera exactamente tres actividades escritas concretas para trabajar las áreas de mejora y reforzar sus fortalezas. "
             "Usa solo los tipos, habilidades, categorías y colores permitidos por el esquema. "
             "Las instrucciones deben ser pasos ejecutables; los prompts deben poder responderse por escrito. "
             "No generes imágenes, iconos ni feedback. No inventes datos de la candidata.",

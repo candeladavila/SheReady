@@ -184,3 +184,13 @@ class ExitReflection(InputModel):
         if len(values) != len(set(values)):
             raise ValueError('No se puede repetir un checkpoint.')
         return values
+
+
+class InitialInterviewInput(InputModel):
+    answers: list[AnswerText] = Field(min_length=5, max_length=5)
+
+
+class InitialProfileContext(InputModel):
+    strengths: list[ShortText] = Field(min_length=1, max_length=10)
+    improvement_areas: list[ShortText] = Field(min_length=1, max_length=10)
+    preferences: list[ShortText] = Field(default_factory=list, max_length=10)

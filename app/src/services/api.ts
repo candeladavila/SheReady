@@ -174,10 +174,16 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
     },
     capabilities: () => request<{ ai_provider: 'gemini' | 'ollama' | 'groq'; ai_configured: boolean; speech_transport?: 'device' | 'server' }>('/capabilities'),
     profile: {
+      initialInterview: () => request<{ completed: boolean; answers: string[] | null; context: { strengths: string[]; improvement_areas: string[]; preferences: string[] } | null }>('/profile/initial-interview'),
+      saveInitialInterview: (answers: string[]) => request<{ completed: boolean; answers: string[] }>('/profile/initial-interview', { method: 'PUT', json: { answers } }),
       saveOnboarding: (document: ProfileDocument) => request<Profile>('/profile/onboarding', { method: 'PUT', json: document }),
       options: () => request<ProfileOptions>('/profile/options'),
       get: () => request<Profile>('/profile'),
       save: (profile: ProfileInput) => request<Profile>('/profile', { method: 'PUT', json: profile }),
+    },
+    rolePlans: {
+      list: () => request<{ items: Array<{ id: string; status: 'generating' | 'ready' | 'failed'; role: { title: string; sector: string; company: string; offer_url: string; offer_description: string } }> }>('/role-plans'),
+      generate: (role: { title: string; sector: string; company: string; offer_url: string; offer_description: string }) => request<{ id: string; status: string }>('/role-plans', { method: 'POST', json: role }),
     },
     activities: {
       daily: () => request<Activity>('/activities/daily', { method: 'POST' }),

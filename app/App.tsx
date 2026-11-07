@@ -23,13 +23,26 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [retry, setRetry] = useState(0);
-  const refreshGettingStarted = async () => { const value = await loadGettingStarted(); setData(value); return value; };
+  const refreshGettingStarted = async (authenticated = false) => {
+    const local = await loadGettingStarted();
+    if (!authenticated) { setData(local); return local; }
+    let [initial, plans] = await Promise.all([api.profile.initialInterview(), api.rolePlans.list()]);
+    if (!initial.completed && local.initialAnswers) {
+      await api.profile.saveInitialInterview(local.initialAnswers);
+      initial = await api.profile.initialInterview();
+    }
+    const latest = plans.items.find(item => item.status === 'ready');
+    const value: GettingStarted = { initialAnswers: initial.answers, targetRole: latest ? { role: latest.role.title, company: latest.role.company, offerUrl: latest.role.offer_url, description: latest.role.offer_description } : local.targetRole };
+    await saveGettingStarted(value); setData(value); return value;
+  };
   const nextAfterOnboarding = (value: GettingStarted) => value.initialAnswers ? (value.targetRole ? 'app' : 'roleInvitation') : 'invitation';
-  const saveAnswers = async (answers: string[]) => { const next = { ...data, initialAnswers: answers }; await saveGettingStarted(next); setData(next); setStage(next.targetRole ? 'app' : 'roleInvitation'); };
-  const saveRole = async (role: TargetRole) => { const next = { ...data, targetRole: role }; await saveGettingStarted(next); setData(next); setStage('app'); };
+  const saveAnswers = async (answers: string[]) => { await api.profile.saveInitialInterview(answers); const next = { ...data, initialAnswers: answers }; await saveGettingStarted(next); setData(next); setStage(next.targetRole ? 'app' : 'roleInvitation'); };
+  const saveRole = async (role: TargetRole) => { await api.rolePlans.generate({ title: role.role, sector: sector || 'Otro sector', company: role.company, offer_url: role.offerUrl, offer_description: role.description }); const next = { ...data, targetRole: role }; await saveGettingStarted(next); setData(next); setStage('app'); };
   useEffect(() => { void (async () => {
+    let authenticated = false;
     try {
       const restored = await restoreSession();
+      authenticated = !!restored;
       const pending = await pendingProfileDocument();
       if (pending) { setSector(pending.sector ?? ''); setCompletedOnboarding(pending.completed); }
       if (restored) {
@@ -38,7 +51,7 @@ export default function App() {
         if (profile) { setSector(profile.sector ?? ''); setCompletedOnboarding(profile.onboarding_document?.completed ?? Boolean(profile.target_role)); }
       }
     } catch { setError('No se pudo recuperar tu sesión. Puedes volver a entrar; tu plan pendiente se conserva.'); setStage('login'); }
-    try { await refreshGettingStarted(); setLoadError(false); setLoaded(true); } catch { setLoadError(true); }
+    try { await refreshGettingStarted(authenticated); setLoadError(false); setLoaded(true); } catch { setLoadError(true); }
   })(); }, [retry]);
   async function finishOnboarding(document: ProfileDocument) {
     if (!document.completed && session) { setStage('app'); return; }
@@ -52,7 +65,7 @@ export default function App() {
   async function signedIn(value: AuthSession) {
     const profile = await api.profile.get().catch(() => null);
     setSector(profile?.sector ?? ''); setCompletedOnboarding(profile?.onboarding_document?.completed ?? Boolean(profile?.target_role));
-    const next = await refreshGettingStarted();
+    const next = await refreshGettingStarted(true);
     setSession(value); setError(''); setStage(next.initialAnswers ? 'app' : 'invitation');
   }
   async function guest() {

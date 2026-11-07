@@ -17,6 +17,7 @@ from content import CONTENT, SKILLS
 from database import get_db
 from middleware import BodyLimitMiddleware
 from models import Activity, Interview, InterviewTurn, Profile, WellbeingCompletion, now
+from personalized import router as personalized_router
 from schemas import (
     AnswerInput,
     InterviewInput,
@@ -529,4 +530,5 @@ def complete_wellbeing(body: WellbeingInput, db: DB):
 
 
 app.include_router(auth_router)
+app.include_router(personalized_router)
 app.include_router(router)
