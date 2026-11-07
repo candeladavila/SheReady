@@ -1,5 +1,6 @@
+import TextInput from '../components/DictationInput';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import AsyncStorage from '../services/accountStorage';
 import { colors } from '../theme/colors';
 import type { RolePlan } from '../services/api';

@@ -99,7 +99,7 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
     const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
     try {
       const token = await getToken?.();
-      if (requireAuth && !token && !['/auth/login', '/auth/register'].includes(path)) throw new ApiError(401, 'Inicia sesión para guardar tu progreso y practicar entrevistas.');
+      if (requireAuth && !token && !['/auth/login', '/auth/register', '/news', '/events'].includes(path.split('?')[0])) throw new ApiError(401, 'Inicia sesión para guardar tu progreso y practicar entrevistas.');
       const headers: Record<string, string> = { Accept: options.response === 'blob' ? 'audio/wav' : 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
       if (options.json !== undefined) headers['Content-Type'] = 'application/json';
@@ -127,7 +127,7 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
     }
   }
 
-  async function transcribeNative(interviewId: string, audio: NativeAudio) {
+  async function transcribeNative(path: string, audio: NativeAudio) {
     if (!/^https?:\/\//i.test(root)) throw new ApiError(null, 'Configura EXPO_PUBLIC_API_URL.');
     const fs = await import('expo-file-system/legacy');
     const info = await fs.getInfoAsync(audio.uri);
@@ -139,7 +139,7 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
     if (requireAuth && !token) throw new ApiError(401, 'Inicia sesión para enviar tu respuesta.');
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
-    const task = fs.createUploadTask(`${root}/interviews/${encodeURIComponent(interviewId)}/transcriptions`, audio.uri, {
+    const task = fs.createUploadTask(`${root}${path}`, audio.uri, {
       httpMethod: 'POST', uploadType: fs.FileSystemUploadType.MULTIPART,
       fieldName: 'file', mimeType: audio.type, headers,
     });
@@ -205,13 +205,20 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
       delete: (interviewId: string) => request<void>(`/interviews/${id(interviewId)}`, { method: 'DELETE', response: 'empty' }),
       speech: (interviewId: string, turnId: string) => request<Blob>(`/interviews/${id(interviewId)}/turns/${id(turnId)}/speech`, { response: 'blob' }),
       transcribe: (interviewId: string, audio: Blob | NativeAudio, filename = 'respuesta.webm') => {
-        if ('uri' in audio) return transcribeNative(interviewId, audio);
+        if ('uri' in audio) return transcribeNative(`/interviews/${encodeURIComponent(interviewId)}/transcriptions`, audio);
         if (audio.size > MAX_AUDIO_BYTES) return Promise.reject(new ApiError(413, 'La grabación supera los 4 MB. Reduce su duración.'));
         const form = new FormData();
         if (typeof Blob !== 'undefined' && audio instanceof Blob) form.append('file', audio, filename);
         else form.append('file', audio as unknown as Blob); // React Native admite {uri, name, type} en FormData.
         return request<{ transcript: string; saved: false; source: 'ai'; next_step: string }>(`/interviews/${id(interviewId)}/transcriptions`, { method: 'POST', form });
       },
+    },
+    dictate: (audio: Blob | NativeAudio) => {
+      if ('uri' in audio) return transcribeNative('/dictation/transcriptions', audio);
+      if (audio.size > MAX_AUDIO_BYTES) return Promise.reject(new ApiError(413, 'La grabación supera los 4 MB.'));
+      const form = new FormData();
+      form.append('file', audio, 'dictado.webm');
+      return request<{ transcript: string; saved: false; source: 'ai'; next_step: string }>('/dictation/transcriptions', { method: 'POST', form });
     },
     wellbeingComplete: (body: { id: string; kind: 'breathing' | 'confidence'; duration_seconds: number }) => request<{ id: string }>('/wellbeing/completions', { method: 'POST', json: body }),
     progress: () => request<Progress>('/progress'),

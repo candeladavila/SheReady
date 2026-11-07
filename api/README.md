@@ -203,3 +203,7 @@ No se envía audio a Gemini. Instala `requirements-local-audio.txt` y ejecuta un
 solo los archivos locales en `.models/whisper-base` (ignorados en Git). El audio temporal
 de síntesis se elimina al terminar la petición. Esta síntesis requiere Windows con una
 voz española instalada y no es compatible con el contenedor Linux del Dockerfile actual.
+
+## Dictado en campos de texto
+
+El dictado requiere sesión y usa `POST /dictation/transcriptions`; no crea ni guarda respuestas. Con `GROQ_API_KEY` configurada utiliza el modelo Whisper de Groq (`GROQ_AUDIO_MODEL`); sin ella necesita el modelo local faster-whisper preparado según las instrucciones anteriores. El audio se envía al servidor y, cuando se usa Groq, a ese proveedor. Se debe informar a la usuaria antes de grabar. La grabación se limita a 90 segundos y la transcripción se puede editar antes de guardar. No se ofrece dictado en contraseñas ni en la pantalla de acceso, ya que aún no existe sesión.
