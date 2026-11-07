@@ -24,7 +24,7 @@ function countdown(date: Date, now: number) {
 }
 function dateLabel(date: Date) { return new Intl.DateTimeFormat('es-ES', { dateStyle: 'long', timeStyle: 'short' }).format(date); }
 
-export default function ProfileScreen({ selectedSector, completedOnboarding, initialInterviewCompleted, targetRole, onOpenInitialInterview, onOpenTargetRole, onOpenOnboarding, onMeditation }: { selectedSector?: string; completedOnboarding: boolean; initialInterviewCompleted: boolean; targetRole: TargetRole | null; onOpenInitialInterview: () => void; onOpenTargetRole: () => void; onOpenOnboarding: () => void; onMeditation: () => void }) {
+export default function ProfileScreen({ selectedSector, completedOnboarding, initialInterviewCompleted, targetRole, onOpenInitialInterview, onOpenTargetRole, onMeditation }: { selectedSector?: string; completedOnboarding: boolean; initialInterviewCompleted: boolean; targetRole: TargetRole | null; onOpenInitialInterview: () => void; onOpenTargetRole: () => void; onMeditation: () => void }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [view, setView] = useState<ViewName>('interviews');
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -82,7 +82,6 @@ export default function ProfileScreen({ selectedSector, completedOnboarding, ini
         {settingsOpen && <View style={styles.settingsCard}><Text style={styles.eyebrow}>AJUSTES</Text>{['Recordatorios', 'Descargar mis datos', 'Cerrar sesión', 'Eliminar mi cuenta'].map(label => <View key={label} style={styles.settingsItem} accessibilityLabel={`${label}, próximamente`}><Text style={styles.settingsText}>{label}</Text><Text style={styles.small}>Próximamente</Text></View>)}</View>}
       </View>
       <View style={[styles.introCards, wide && styles.introCardsWide]}>
-      {!completedOnboarding && <View style={styles.introCard}><Text style={styles.eyebrow}>2 PASOS PARA EMPEZAR</Text><Text style={styles.cardTitle}>Cuéntanos un poco sobre ti</Text><Text style={styles.hint}>Así adaptamos tus prácticas a lo que buscas. Tú decides qué compartir.</Text><Button label="Completar el onboarding" onPress={onOpenOnboarding} /><Text style={styles.centerNote}>Después: tu entrevista inicial</Text></View>}
       {!initialInterviewCompleted && <View style={styles.introCard}><Text style={styles.eyebrow}>UN PASO MÁS</Text><Text style={styles.cardTitle}>Haz tu entrevista inicial</Text><Text style={styles.hint}>Una práctica breve para conocer tus experiencias y tus objetivos.</Text><Button label="Hacer mi entrevista inicial" onPress={onOpenInitialInterview} /></View>}
       </View>
       {completedOnboarding && <>
@@ -90,7 +89,7 @@ export default function ProfileScreen({ selectedSector, completedOnboarding, ini
       </>}
       <View style={[styles.profileSections, wide && styles.profileSectionsWide]}>
       {completedOnboarding && <View style={styles.profileSection}>
-        <View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>TU ONBOARDING</Text><Text style={styles.sectionTitle}>Lo que nos contaste</Text></View><Pressable accessibilityRole="button" onPress={onOpenOnboarding} style={styles.sectionAction}><Text style={styles.linkText}>Editar ↗</Text></Pressable></View>
+        <View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>TU ONBOARDING</Text><Text style={styles.sectionTitle}>Lo que nos contaste</Text></View></View>
         <View style={styles.summaryCard}>{[['Sector', selectedSector || 'Sin seleccionar'], ['Objetivos', 'Disponibles al conectar tu perfil'], ['Tu ritmo', 'Disponible próximamente']].map(([label, value]) => <View key={label} style={styles.summaryRow}><Text style={styles.summaryLabel}>{label}</Text><Text style={styles.summaryValue}>{value}</Text></View>)}</View>
       </View>}
       <View style={styles.profileSection}><View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>TU PRÓXIMA OPORTUNIDAD</Text><Text style={styles.sectionTitle}>Puesto que preparas</Text></View><Pressable accessibilityRole="button" onPress={onOpenTargetRole} style={styles.sectionAction}><Text style={styles.linkText}>{targetRole ? 'Editar' : 'Añadir'} ↗</Text></Pressable></View><View style={styles.summaryCard}><Text style={styles.hint}>{targetRole ? `${targetRole.role}${targetRole.company ? ` · ${targetRole.company}` : ''}` : 'Añade el puesto que te gustaría preparar.'}</Text></View></View>

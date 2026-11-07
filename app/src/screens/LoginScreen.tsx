@@ -41,7 +41,7 @@ export default function LoginScreen({ onSuccess, onGuest, initialError = '' }: {
       <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setRegister(!register); setConfirmation(''); setError(''); }} style={styles.link}><Text style={styles.linkText}>{register ? 'Ya tengo cuenta · Iniciar sesión' : '¿Primera vez? Crea tu cuenta'}</Text></Pressable>
     </View>
     <Pressable accessibilityRole="button" disabled={busy} onPress={onGuest} style={styles.guest}><Text style={styles.linkText}>Entrar como invitada  →</Text></Pressable>
-    <Text style={styles.note}>Como invitada puedes explorar y realizar actividades de bienestar. Tu plan queda en este dispositivo hasta que inicies sesión.</Text>
+    <Text style={styles.note}>Como invitada puedes explorar la aplicación. Inicia sesión para acceder a las actividades, entrevistas, noticias y tu progreso.</Text>
     {Platform.OS === 'web' && <Pressable accessibilityRole="button" onPress={() => void downloadProfileDocument().catch(e => setError(e.message))} style={styles.link}><Text style={styles.note}>Descargar mi perfil en JSON</Text></Pressable>}
   </View></ScrollView>;
 }

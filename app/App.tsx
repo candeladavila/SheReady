@@ -37,7 +37,7 @@ export default function App() {
         const profile = await api.profile.get().catch(() => null);
         if (profile) { setSector(profile.sector ?? ''); setCompletedOnboarding(profile.onboarding_document?.completed ?? Boolean(profile.target_role)); }
       }
-    } catch { setError('No se pudo recuperar tu sesión. Puedes volver a entrar; tu plan pendiente se conserva.'); }
+    } catch { setError('No se pudo recuperar tu sesión. Puedes volver a entrar; tu plan pendiente se conserva.'); setStage('login'); }
     try { await refreshGettingStarted(); setLoadError(false); setLoaded(true); } catch { setLoadError(true); }
   })(); }, [retry]);
   async function finishOnboarding(document: ProfileDocument) {
@@ -53,15 +53,15 @@ export default function App() {
     const profile = await api.profile.get().catch(() => null);
     setSector(profile?.sector ?? ''); setCompletedOnboarding(profile?.onboarding_document?.completed ?? Boolean(profile?.target_role));
     const next = await refreshGettingStarted();
-    setSession(value); setError(''); setStage(profile ? (!next.initialAnswers ? 'invitation' : 'app') : 'onboarding');
+    setSession(value); setError(''); setStage(next.initialAnswers ? 'app' : 'invitation');
   }
   async function guest() {
     try {
       await enterGuestSession();
       const pending = await pendingProfileDocument();
       setSector(pending?.sector ?? ''); setCompletedOnboarding(pending?.completed ?? false);
-      const next = await refreshGettingStarted();
-      setSession(null); setError(''); setReturnToProfile(false); setStage(pending?.completed ? nextAfterOnboarding(next) : 'app');
+      await refreshGettingStarted();
+      setSession(null); setError(''); setReturnToProfile(false); setStage('app');
     } catch { setError('No se pudo preparar el acceso como invitada. Inténtalo de nuevo.'); }
   }
   async function logout() {
@@ -69,10 +69,10 @@ export default function App() {
     catch { setError('No se pudo cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.'); setStage('login'); }
   }
   if (!loaded) return <View style={styles.loading}>{loadError ? <><Text accessibilityRole="alert" style={styles.error}>No se han podido cargar tus datos. Inténtalo de nuevo.</Text><Pressable accessibilityRole="button" onPress={() => setRetry(retry + 1)} style={styles.retry}><Text style={styles.retryText}>Reintentar</Text></Pressable></> : <ActivityIndicator color={colors.plum} />}</View>;
-  if (stage === 'launch') return <LaunchScreen onFinish={() => setStage('onboarding')} />;
+  if (stage === 'launch') return <LaunchScreen onFinish={() => setStage(session ? 'app' : 'onboarding')} />;
   if (stage === 'onboarding') return <OnboardingScreen startAtForm={returnToProfile} onComplete={finishOnboarding} onSkip={finishOnboarding} />;
   if (stage === 'login') return <LoginScreen initialError={error} onSuccess={signedIn} onGuest={() => void guest()} />;
   if (stage !== 'app') return <GettingStartedScreen key={stage === 'invitation' || stage === 'interview' ? 'initial' : 'target'} stage={stage} selectedSector={sector} initialAnswers={data.initialAnswers} targetRole={data.targetRole} onStage={setStage} onAnswers={saveAnswers} onRole={saveRole} onLater={() => { if ((stage === 'invitation' || stage === 'interview') && !data.initialAnswers) setStage('app'); else if ((stage === 'invitation' || stage === 'interview') && !returnToProfile && !data.targetRole) setStage('roleInvitation'); else setStage('app'); }} onBack={() => setStage(stage === 'role' ? 'roleInvitation' : 'invitation')} />;
-  return <AppShell initialInterviewCompleted={!!data.initialAnswers} targetRole={data.targetRole} onOpenInitialInterview={() => { setReturnToProfile(true); setStage('invitation'); }} onOpenTargetRole={() => { setReturnToProfile(true); setStage('roleInvitation'); }} key={session?.user.id ?? 'guest'} selectedSector={sector} initialRoute={returnToProfile ? 'profile' : 'home'} completedOnboarding={completedOnboarding} accountEmail={session?.user.email} onLogin={() => { setError(''); setStage('login'); }} onLogout={() => void logout()} onOpenOnboarding={() => { setReturnToProfile(true); setStage('onboarding'); }} />;
+  return <AppShell initialInterviewCompleted={!!data.initialAnswers} targetRole={data.targetRole} onOpenInitialInterview={() => { setReturnToProfile(true); setStage('invitation'); }} onOpenTargetRole={() => { setReturnToProfile(true); setStage('roleInvitation'); }} key={session?.user.id ?? 'guest'} selectedSector={sector} initialRoute={returnToProfile ? 'profile' : 'home'} completedOnboarding={completedOnboarding} accountEmail={session?.user.email} onLogin={() => { setError(''); setStage('login'); }} onLogout={() => void logout()} />;
 }
 const styles = StyleSheet.create({ loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.ivory, padding: 24 }, error: { color: colors.eggplant, textAlign: 'center', fontSize: 15 }, retry: { marginTop: 20, backgroundColor: colors.plum, padding: 16, borderRadius: 12 }, retryText: { color: colors.white, fontWeight: '700' } });
