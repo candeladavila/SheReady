@@ -8,6 +8,7 @@ from ai import get_ai
 from config import get_settings
 from groq_provider import GroqProvider, strict_schema
 from schemas import Feedback, Question
+from test_personalized_plan import plan_data
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +31,26 @@ QUESTION = {
     "skill": "communication",
     "category": "soft_skills",
 }
+
+
+def test_compact_plan_restores_all_interviews_and_activities(monkeypatch):
+    expected = plan_data()
+    compact = {}
+    for key, section in (('a', 'single_question'), ('b', 'five_minutes'), ('c', 'ten_minutes'), ('d', 'fifteen_minutes')):
+        compact[key] = {
+            f'i{i}': {f'q{j}': {'t': q['text'], 's': q['skill'], 'c': q['category']}
+                       for j, q in enumerate(interview['questions'], 1)}
+            for i, interview in enumerate(expected[section], 1)
+        }
+    compact['e'] = {f'i{i}': {'t': a['title'], 'd': a['description'], 'o': a['objective'],
+        'w': a['improvement_area'], 's': a['skill'], 'ins': a['instructions'], 'p': a['prompts']}
+        for i, a in enumerate(expected['activities'], 1)}
+    captured = mock_response(monkeypatch, completion(compact))
+    result = GroqProvider().plan({'strengths': ['Aprender'], 'improvement_areas': ['Explicar'], 'preferences': []},
+                                 {'title': 'Desarrolladora', 'sector': 'Tecnología'})
+    assert [len(getattr(result, name)) for name in ('single_question', 'five_minutes', 'ten_minutes', 'fifteen_minutes', 'activities')] == [3] * 5
+    assert [len(group[0].questions) for group in (result.single_question, result.five_minutes, result.ten_minutes, result.fifteen_minutes)] == [1, 3, 5, 7]
+    assert captured['json']['max_completion_tokens'] == 3200
 
 
 def mock_response(monkeypatch, data, status=200, headers=None):
