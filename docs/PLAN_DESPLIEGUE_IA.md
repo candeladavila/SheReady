@@ -8,7 +8,7 @@ Cuando se solicite preparar el despliegue de SheReady o expresiones equivalentes
 2. Realiza una entrevista inicial común de tres minutos, con las mismas preguntas para todas.
 3. La IA analiza las preguntas y respuestas de esa entrevista y genera un perfil de características, fortalezas y áreas de mejora de la usuaria. El backend debe guardar este perfil de forma persistente y asociarlo a su cuenta para personalizar la preparación. Es una guía educativa, no un diagnóstico ni una valoración definitiva de la persona.
 4. En su perfil, la usuaria selecciona el puesto o rol al que quiere aplicar. El plan se genera para esa usuaria y ese rol, a partir de su perfil y, cuando exista, de la información de la oferta y la entrevista real.
-5. La IA genera tres simulacros distintos para cada duración de práctica de 5, 10 y 15 minutos: nueve en total por usuaria y rol. Cada intento usa el siguiente simulacro de la duración elegida, de forma cíclica; el progreso debe persistir por usuaria, rol y duración.
+5. La IA genera tres simulacros distintos para cada duración de práctica de una pregunta, 5, 10 y 15 minutos: doce en total por usuaria y rol. Cada intento usa el siguiente simulacro de la duración elegida, de forma cíclica; el progreso debe persistir por usuaria, rol y duración.
 6. La IA también propone exactamente tres actividades personalizadas por usuaria y rol para trabajar las áreas de mejora identificadas y reforzar sus habilidades. El backend valida la respuesta y crea las actividades con el contenido necesario para que funcionen con la estructura y las experiencias de actividades existentes.
 7. Al finalizar cada simulacro, el backend envía a la IA las preguntas y la transcripción de las respuestas y genera un informe claro, estructurado y educativo, con fortalezas, sugerencias y ejemplos de reformulación para mejorar su forma de expresarse.
 
@@ -43,3 +43,5 @@ El ejemplo muestra una actividad para ilustrar los campos; la respuesta real deb
 - La clave de Groq debe permanecer en el backend mediante variables de entorno; no incorporarla al frontend ni al repositorio.
 - Diseñar la persistencia necesaria para datos, simulacros, avance cíclico, transcripciones, informes y actividades; la implementación concreta queda pendiente.
 - Revisar la integración existente de transcripción e IA y completar y verificar el flujo personalizado descrito arriba antes de darlo por implementado.
+
+El contrato de planificación, los límites de su implementación y el JSON de reflexión posterior están documentados en [PLAN_PERSONALIZADO.md](../api/PLAN_PERSONALIZADO.md).

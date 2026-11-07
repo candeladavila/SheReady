@@ -107,3 +107,16 @@ Actualidad muestra noticias por sector y semana local de calendario (lunes inclu
 Para regenerar el código del reproductor móvil después de modificar `kokoroWeb.ts`, ejecuta `pnpm build:kokoro-bridge` desde `app`.
 
 El flujo previsto para el despliegue y la preparación personalizada con IA está registrado en [Plan de despliegue e IA](../docs/PLAN_DESPLIEGUE_IA.md).
+
+## Entrevista inicial y puesto objetivo
+
+Al completar el onboarding, se ofrece una entrevista inicial común de cinco preguntas, con respuestas escritas. La primera pregunta invita a la usuaria a presentarse; las demás exploran experiencias, retos, colaboración y objetivos de mejora. Se puede posponer y retomarla desde Perfil. Tras completarla o posponerla, se ofrece añadir un puesto con enlace o descripción de la oferta; también se puede hacer más tarde desde Perfil.
+
+Las respuestas se guardan al terminar el cuestionario, y el puesto al guardar el formulario, en AsyncStorage de este dispositivo. No se sincronizan ni están cifrados por esta funcionalidad. Las respuestas y el puesto se mantienen al reiniciar; la integración con la cuenta, la transcripción por voz, el análisis de IA y la generación de un perfil o plan personalizados aún no están implementados en este flujo.
+
+### Endpoints pendientes para el flujo inicial
+
+- Guardar y recuperar las respuestas de la entrevista inicial asociadas a la cuenta.
+- Generar y recuperar un perfil educativo de fortalezas y áreas de mejora basado en las respuestas.
+- Guardar y recuperar el puesto objetivo, su enlace o descripción y asociarlo a la cuenta.
+- Generar simulacros y actividades personalizadas para ese perfil y puesto, conforme al [plan previsto](../docs/PLAN_DESPLIEGUE_IA.md).

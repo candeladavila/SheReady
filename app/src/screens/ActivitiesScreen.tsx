@@ -10,7 +10,7 @@ import ReflectionActivity from './ReflectionActivity';
 const PLAYLIST = 'https://open.spotify.com/user/spotify/playlist/37i9dQZF1DWZqd5JICZI0u?OS=&TappID=285042';
 type Screen = 'list' | 'instructions' | 'breathing' | 'logo' | 'finished' | 'mini' | 'confidence';
 
-export default function ActivitiesScreen({ onSessionChange, selectedSector, initialScreen = 'list' }: { onSessionChange: (active: boolean) => void; selectedSector?: string; initialScreen?: 'list' | 'instructions' | 'confidence' }) {
+export default function ActivitiesScreen({ onSessionChange, selectedSector, initialScreen = 'list' }: { onSessionChange: (active: boolean) => void; selectedSector?: string; initialScreen?: 'list' | 'instructions' | 'confidence' | 'mini' }) {
   const completionId = useRef('');
   const [saveError, setSaveError] = useState('');
   const [screen, setScreen] = useState<Screen>(initialScreen);

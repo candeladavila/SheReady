@@ -13,7 +13,7 @@ from google.genai import errors, types
 from pydantic import ValidationError
 
 from config import get_settings
-from schemas import Feedback, GeneratedActivity, Question
+from schemas import Feedback, GeneratedActivity, PersonalizedPlan, Question
 
 BANK = json.loads((Path(__file__).parent / "data/question_bank.json").read_text(encoding="utf-8"))
 SYSTEM = """Eres la entrevistadora de práctica de SheReady. Habla siempre en español con tono
@@ -71,7 +71,7 @@ class GeminiProvider:
                     response_mime_type="application/json",
                     response_schema=schema,
                     temperature=0.6,
-                    max_output_tokens=5000,
+                    max_output_tokens=16000 if schema is PersonalizedPlan else 5000,
                 ),
             )
             try:
@@ -82,6 +82,19 @@ class GeminiProvider:
                 ) from None
 
         return self._run(call)
+
+    def plan(self, context, target_role):
+        return self.structured(
+            PersonalizedPlan,
+            "Genera un plan de práctica personalizado en español a partir del contexto y el puesto. "
+            "Devuelve exactamente tres simulacros diferentes en cada categoría: single_question con "
+            "una pregunta, five_minutes con tres, ten_minutes con cinco y fifteen_minutes con siete. "
+            "Además, genera exactamente tres actividades escritas concretas para trabajar las áreas de mejora. "
+            "Usa solo los tipos, habilidades, categorías y colores permitidos por el esquema. "
+            "Las instrucciones deben ser pasos ejecutables; los prompts deben poder responderse por escrito. "
+            "No generes imágenes, iconos ni feedback. No inventes datos de la candidata.",
+            {"context": context, "target_role": target_role},
+        )
 
     def activity(self, profile, memory):
         return self.structured(
