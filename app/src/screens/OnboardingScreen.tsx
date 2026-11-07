@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { ProfileDocument } from '../services/profileDocument';
 import { colors } from '../theme/colors';
 import { sectorIllustration } from '../constants/sectorIllustrations';
 
@@ -23,7 +24,7 @@ const sectors = ['Tecnología', 'Marketing', 'Finanzas', 'Educación y salud', '
 const purple = colors.plum;
 const sage = colors.sage;
 
-export default function OnboardingScreen({ onComplete, onSkip, startAtForm = false }: { onComplete: (sector: string) => void; onSkip: (sector?: string) => void; startAtForm?: boolean }) {
+export default function OnboardingScreen({ onComplete, onSkip, startAtForm = false }: { onComplete: (document: ProfileDocument) => Promise<void>; onSkip: (document: ProfileDocument) => Promise<void>; startAtForm?: boolean }) {
   const [page, setPage] = useState(startAtForm ? 2 : 1);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [age, setAge] = useState('');
@@ -34,14 +35,25 @@ export default function OnboardingScreen({ onComplete, onSkip, startAtForm = fal
   const toggleGoal = (goal: string) => setSelectedGoals(current => current.includes(goal) ? current.filter(item => item !== goal) : [...current, goal]);
   const goNext = () => setPage(current => Math.min(current + 1, 6));
   const isDisabled = (page === 2 && selectedGoals.length === 0) || (page === 4 && !time) || (page === 5 && !sector);
-  const next = () => page === 6 ? onComplete(sector) : goNext();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  async function finish(completed: boolean) {
+    if (saving) return;
+    setSaving(true); setSaveError('');
+    const minutes = Number.parseInt(time, 10);
+    const document: ProfileDocument = { schema_version: 1, created_at: new Date().toISOString(), completed, goals: selectedGoals, age_range: age || null, daily_time_choice: time || null, daily_minutes: Number.isFinite(minutes) ? minutes : null, sector: page >= 5 ? sector : null };
+    try { await (completed ? onComplete(document) : onSkip(document)); }
+    catch { setSaveError('No se pudo guardar tu perfil en este dispositivo. Inténtalo de nuevo.'); }
+    finally { setSaving(false); }
+  }
+  const next = () => page === 6 ? void finish(true) : goNext();
 
   return (
     <View style={styles.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="dark" />{saveError ? <Text accessibilityRole="alert" style={styles.helper}>{saveError}</Text> : null}
       {page === 1 ? (
         <ScrollView contentContainerStyle={styles.intro}>
-          <View style={styles.introHeader}><Text style={styles.brand}>She ready</Text><Pressable accessibilityRole="button" onPress={() => onSkip(page >= 5 ? sector : undefined)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View>
+          <View style={styles.introHeader}><Text style={styles.brand}>She ready</Text><Pressable accessibilityRole="button" onPress={() => void finish(false)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View>
           <View style={styles.hero}><Text style={styles.heroEyebrow}>NO TIENES QUE TENERLO TODO CLARO.</Text><Text style={styles.heroTitle}>Un paso.</Text><Text style={[styles.heroTitle, styles.heroItalic]}>Y otro.</Text><View style={styles.heroLast}><Text style={[styles.heroTitle, { color: sage }]}>A tu ritmo.</Text><Text style={styles.limeArrow}>↗</Text></View></View>
           <Text style={styles.introTitle}>Tu próximo capítulo,{'\n'}con compañía.</Text>
           <Text style={styles.description}>Ejercicios diarios, noticias relevantes y práctica de entrevistas con IA por voz para que avances con claridad y confianza.</Text>
@@ -50,7 +62,7 @@ export default function OnboardingScreen({ onComplete, onSkip, startAtForm = fal
         </ScrollView>
       ) : (
         <>
-          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => setPage(page - 1)} hitSlop={12}><Text style={styles.back}>←</Text></Pressable><Text style={styles.brand}>She ready</Text><View style={styles.headerRight}><Text style={styles.counter}>{page - 1} de 5</Text><Pressable accessibilityRole="button" onPress={() => onSkip(page >= 5 ? sector : undefined)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View></View>
+          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => setPage(page - 1)} hitSlop={12}><Text style={styles.back}>←</Text></Pressable><Text style={styles.brand}>She ready</Text><View style={styles.headerRight}><Text style={styles.counter}>{page - 1} de 5</Text><Pressable accessibilityRole="button" onPress={() => void finish(false)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View></View>
           <View style={styles.progress}>{[0, 1, 2, 3, 4].map(i => <View key={i} style={[styles.progressPart, i < page - 1 && styles.progressActive]} />)}</View>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {page === 2 && <><Heading eyebrow="TU PUNTO DE PARTIDA" title={'¿Qué necesitas\nhoy?'} description="Elige uno o varios objetivos. Empezaremos por lo que más te importa." /><View style={styles.options}>{goals.map(option => <Choice key={option.label} option={option} selected={selectedGoals.includes(option.label)} multiple onPress={() => toggleGoal(option.label)} />)}</View></>}
@@ -59,7 +71,7 @@ export default function OnboardingScreen({ onComplete, onSkip, startAtForm = fal
             {page === 5 && <><View style={styles.sectorHeader}><View style={styles.sectorHeaderText}><Heading eyebrow="TU DIRECCIÓN, POR AHORA" title={'¿Qué sector\nte interesa?'} description="Elige tu principal interés para adaptar los ejemplos y ejercicios de tu plan." /></View>{sectorIllustration(sector) && <Image source={sectorIllustration(sector)} style={[styles.sectorHeaderImage, !isTouchLayout && styles.sectorHeaderImageWeb]} resizeMode="contain" accessible={false} />}</View><View style={styles.grid}>{sectors.map((label, i) => <SectorChoice key={label} label={label} half={i < 4} selected={sector === label} onPress={() => setSector(label)} />)}</View></>}
             {page === 6 && <><Heading eyebrow="TU PLAN INICIAL" title={'Un punto de partida.\nMucho por delante.'} description="Tu plan combina ejercicios diarios, noticias relevantes y práctica de entrevistas con IA por voz." /><View style={styles.planCard}><View style={styles.planTop}><Text style={styles.planTitle}>{time === 'Iré día a día' ? 'A tu ritmo' : `${time.replace('minutos', 'min')} al día`}</Text><Text style={styles.limeArrow}>↗</Text></View><View style={styles.planDivider} /><Text style={styles.planMeta}>{sector}{age && age !== 'Prefiero no decirlo' ? ` · ${age}` : ''} · Ejercicios diarios, noticias y práctica de entrevistas con IA por voz</Text><Text style={styles.planGoals}>{selectedGoals.join(' + ')}</Text></View><Text style={styles.sectionLabel}>LAS SECCIONES DE TU PLAN</Text>{[['01', 'Ejercicios diarios', `Hoy · ${time} · Comienza con un ejercicio breve para enfocar tu búsqueda.`], ['02', 'Noticias', 'Después · Accede a noticias relevantes para mantenerte al día en tu sector.'], ['03', 'Práctica de entrevistas con IA por voz', 'Después · Practica entrevistas con IA por voz para sentirte más segura.']].map(([number, title, description]) => <View style={styles.planRow} key={number}><Text style={styles.number}>{number}</Text><View style={styles.rowText}><Text style={styles.rowTitle}>{title}</Text><Text style={styles.rowDescription}>{description}</Text></View></View>)}</>}
           </ScrollView>
-          <View style={styles.footer}><Action label={page === 2 ? `Continuar con ${selectedGoals.length} ${selectedGoals.length === 1 ? 'objetivo' : 'objetivos'}` : page === 6 ? 'Continuar'  : 'Continuar'} onPress={next} disabled={isDisabled} /><Text style={styles.helper}>{page === 2 ? 'Podrás cambiar tus objetivos más adelante.' : page === 3 ? 'Este dato es opcional.' : page === 4 ? 'Sin rachas ni presión. Puedes ajustar tu ritmo.' : page === 5 ? 'Elegir un sector no limita tus oportunidades.' : 'Tu plan puede cambiar contigo.'}</Text></View>
+          <View style={styles.footer}><Action label={page === 2 ? `Continuar con ${selectedGoals.length} ${selectedGoals.length === 1 ? 'objetivo' : 'objetivos'}` : page === 6 ? (saving ? 'Guardando…' : 'Guardar mi plan y continuar') : 'Continuar'} onPress={next} disabled={isDisabled || saving} /><Text style={styles.helper}>{page === 2 ? 'Podrás cambiar tus objetivos más adelante.' : page === 3 ? 'Este dato es opcional.' : page === 4 ? 'Sin rachas ni presión. Puedes ajustar tu ritmo.' : page === 5 ? 'Elegir un sector no limita tus oportunidades.' : 'Tu plan puede cambiar contigo.'}</Text></View>
         </>
       )}
     </View>

@@ -7,12 +7,13 @@ const source = fs.readFileSync(path.join(__dirname, '../src/services/api.ts'), '
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
 const exported = {};
 let fileExists = true;
+let fileSize = 1000;
 let response = { status: 200, body: JSON.stringify({ transcript: 'Mi respuesta', saved: false, source: 'ai', next_step: 'confirm' }) };
 let captured;
 let fetchCalls = 0;
 const native = {
   FileSystemUploadType: { MULTIPART: 1 },
-  getInfoAsync: async () => ({ exists: fileExists, size: 1000, isDirectory: false }),
+  getInfoAsync: async () => ({ exists: fileExists, size: fileSize, isDirectory: false }),
   createUploadTask: (url, uri, options) => {
     captured = { url, uri, options };
     return { uploadAsync: async () => response, cancelAsync: async () => {} };
@@ -20,7 +21,7 @@ const native = {
 };
 vm.runInNewContext(compiled, {
   exports: exported, process: { env: {} }, Blob, FormData, AbortController, setTimeout, clearTimeout,
-  require: name => { assert.equal(name, 'expo-file-system/legacy'); return native; },
+  require: name => { if (name === './access') return { getAccessToken: () => null }; assert.equal(name, 'expo-file-system/legacy'); return native; },
   fetch: async () => { fetchCalls++; return { ok: true, status: 200, json: async () => ({ transcript: 'Web', saved: false }) }; },
 });
 (async () => {
@@ -40,6 +41,10 @@ vm.runInNewContext(compiled, {
   fileExists = false;
   await assert.rejects(client.interviews.transcribe('i', audio), e => e.message.includes('vacía'));
   fileExists = true;
+  fileSize = 4_000_001;
+  await assert.rejects(client.interviews.transcribe('i', audio), e => e.status === 413);
+  fileSize = 1000;
+  await assert.rejects(client.interviews.transcribe('i', new Blob([new Uint8Array(4_000_001)])), e => e.status === 413);
   native.createUploadTask = () => ({ uploadAsync: async () => { throw Error('native upload failed'); }, cancelAsync: async () => {} });
   await assert.rejects(client.interviews.transcribe('i', audio), e => e.message.includes('Se conserva'));
   assert.equal((await client.interviews.transcribe('i', new Blob(['audio']))).transcript, 'Web');

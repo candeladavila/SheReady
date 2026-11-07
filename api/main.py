@@ -1,11 +1,9 @@
 from datetime import date, timedelta
-from secrets import compare_digest
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -13,6 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 from ai import get_ai
+from auth import auth_router, user_scope
 from config import get_settings
 from content import CONTENT, SKILLS
 from database import get_db
@@ -21,6 +20,7 @@ from models import Activity, Interview, InterviewTurn, Profile, WellbeingComplet
 from schemas import (
     AnswerInput,
     InterviewInput,
+    OnboardingDocument,
     PersonalizedPlan,
     PlanRequest,
     ProfileInput,
@@ -42,8 +42,8 @@ app = FastAPI(
     title="SheReady API",
     version="1.0.0",
     description=(
-        "Backend de demo con un perfil compartido. IA real mediante un proveedor configurable; contenido editorial de ejemplo. "
-        "Configura DEMO_ACCESS_TOKEN si expones la API. Los endpoints no implementan cuentas individuales."
+        "Backend con cuentas individuales. IA real mediante un proveedor configurable; contenido editorial de ejemplo. "
+        "Los datos de cada cuenta requieren su token de sesión."
     ),
 )
 app.add_middleware(
@@ -52,19 +52,16 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
 )
-bearer = HTTPBearer(auto_error=False)
 app.add_middleware(BodyLimitMiddleware)
 
 
-def demo_access(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
-    expected = get_settings().demo_access_token.get_secret_value()
-    if expected and (not credentials or not compare_digest(credentials.credentials, expected)):
-        raise HTTPException(
-            401, "Token de acceso a la demo incorrecto.", headers={"WWW-Authenticate": "Bearer"}
-        )
+@app.middleware("http")
+async def prevent_private_response_caching(request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
-
-router = APIRouter(dependencies=[Depends(demo_access)])
+router = APIRouter(dependencies=[Depends(user_scope)])
 DB = Annotated[Session, Depends(get_db)]
 AI = Annotated[object, Depends(get_ai)]
 
@@ -117,7 +114,8 @@ def capabilities():
         },
     }
     return {
-        "demo_shared_profile": True,
+        "demo_shared_profile": False,
+        "authentication_required": True,
         "ai_configured": (
             bool(s.groq_api_key.get_secret_value())
             if s.ai_provider == "groq"
@@ -156,7 +154,11 @@ def profile_view(profile):
     return {
         "id": profile.id,
         **profile.data,
-        "days_until_interview": (date.fromisoformat(profile.data["interview_date"]) - today()).days,
+        "days_until_interview": (
+            (date.fromisoformat(profile.data["interview_date"]) - today()).days
+            if profile.data.get("interview_date")
+            else None
+        ),
         "created_at": profile.created_at,
         "updated_at": profile.updated_at,
     }
@@ -167,17 +169,51 @@ def read_profile(db: DB):
     return profile_view(profile_or_404(db))
 
 
+@router.put("/profile/onboarding", tags=["profile"])
+def save_onboarding(body: OnboardingDocument, db: DB):
+    item = db.get(Profile, db.info["user_id"])
+    data = (
+        dict(item.data)
+        if item
+        else {
+            "age": None,
+            "target_role": None,
+            "experience_years": None,
+            "strengths": [],
+            "improvement_areas": [],
+            "interview_date": None,
+            "sector": None,
+            "daily_minutes": None,
+        }
+    )
+    data["onboarding_document"] = body.model_dump(mode="json")
+    data["goals"] = body.goals
+    if body.sector:
+        data["sector"] = body.sector
+    if body.daily_minutes:
+        data["daily_minutes"] = body.daily_minutes
+    if item:
+        item.data = data
+    else:
+        item = Profile(id=db.info["user_id"], data=data)
+        db.add(item)
+    db.commit()
+    return profile_view(item)
+
+
 @router.put("/profile", tags=["profile"])
 def save_profile(body: ProfileInput, db: DB):
     target = body.interview_date or today() + timedelta(days=body.interview_in_days)
     data = body.model_dump(mode="json", exclude={"interview_in_days", "interview_date"})
     data["interview_date"] = target.isoformat()
-    item = db.get(Profile, "demo")
+    item = db.get(Profile, db.info["user_id"])
     if item:
+        if item.data.get("onboarding_document"):
+            data["onboarding_document"] = item.data["onboarding_document"]
         item.data = data
         item.updated_at = now()
     else:
-        item = Profile(id="demo", data=data)
+        item = Profile(id=db.info["user_id"], data=data)
         db.add(item)
     db.commit()
     return profile_view(item)
@@ -476,6 +512,8 @@ def complete_wellbeing(body: WellbeingInput, db: DB):
     profile = profile_or_404(db)
     item = db.get(WellbeingCompletion, body.id)
     if item:
+        if item.profile_id != profile.id:
+            raise HTTPException(404, "Registro no encontrado.")
         if item.kind != body.kind or item.duration_seconds != body.duration_seconds:
             raise HTTPException(409, "El registro ya existe con otros datos.")
     else:
@@ -490,4 +528,5 @@ def complete_wellbeing(body: WellbeingInput, db: DB):
     return {"id": item.id, "kind": item.kind, "created_at": item.created_at}
 
 
+app.include_router(auth_router)
 app.include_router(router)

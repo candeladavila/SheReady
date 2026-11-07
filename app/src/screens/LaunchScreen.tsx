@@ -1,10 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import { AccessibilityInfo, Animated, Easing, Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { G, Path, Rect } from 'react-native-svg';
 import { colors } from '../theme/colors';
 
 const AnimatedGroup = Animated.createAnimatedComponent(G);
+
+function LogoGroup({ value, children, ...props }: Omit<ComponentProps<typeof G>, 'opacity'> & { value: Animated.Value }) {
+  const [opacity, setOpacity] = useState(0);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const listener = value.addListener(({ value: current }) => setOpacity(current));
+    return () => value.removeListener(listener);
+  }, [value]);
+  return Platform.OS === 'web'
+    ? <G {...props} opacity={opacity}>{children}</G>
+    : <AnimatedGroup {...props} opacity={value}>{children}</AnimatedGroup>;
+}
 
 type Props = { onFinish: () => void };
 
@@ -31,7 +43,7 @@ export default function LaunchScreen({ onFinish }: Props) {
         return;
       }
       const timing = (value: Animated.Value, toValue: number, duration: number) =>
-        Animated.timing(value, { toValue, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+        Animated.timing(value, { toValue, duration, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== 'web' });
       animation = Animated.sequence([
         timing(steps, 1, 650),
         timing(flag, 1, 350),
@@ -53,18 +65,18 @@ export default function LaunchScreen({ onFinish }: Props) {
       <Animated.View style={[styles.lockup, { width: 310 * scale, height: 140 * scale, opacity: fade }]}>
         <Animated.View style={[styles.logo, { width: 140 * scale, height: 140 * scale, transform: [{ translateX: shift.interpolate({ inputRange: [0, 1], outputRange: [75 * scale, 0] }) }] }]}>
           <Svg width={140 * scale} height={140 * scale} viewBox="0 0 600 600">
-            <AnimatedGroup opacity={steps}>
+            <LogoGroup value={steps}>
               <Path d="M150 415 H210 V373 Q210 341 242 341 H321 V311 Q321 280 352 280 H434 Q463 280 463 308 V484 Q463 500 447 500 H123 Q108 500 108 485 V459 Q108 415 150 415 Z" fill={colors.ivory} />
               <Path d="M150 415 H329 Q354 415 354 442 V500 H123 Q108 500 108 485 V458 Q108 415 150 415 Z" fill={colors.lavender} />
               <Path d="M367 340 H463 V485 Q463 500 447 500 H232 V457 Q232 415 275 415 H337 V370 Q337 340 367 340 Z" fill={colors.lavender} />
-            </AnimatedGroup>
-            <AnimatedGroup opacity={flag}>
+            </LogoGroup>
+            <LogoGroup value={flag}>
               <Rect x="387" y="149" width="14" height="143" rx="7" fill={colors.coral} />
               <Path d="M396 153 L482 192 Q490 197 482 203 L396 241 Z" fill={colors.coral} />
-            </AnimatedGroup>
-            <AnimatedGroup opacity={rays} fill="none" stroke={colors.ivory} strokeWidth={15} strokeLinecap="round">
+            </LogoGroup>
+            <LogoGroup value={rays} fill="none" stroke={colors.ivory} strokeWidth={15} strokeLinecap="round">
               <Path d="M278 182 H312" /><Path d="M299 124 L329 151" /><Path d="M350 89 L365 121" />
-            </AnimatedGroup>
+            </LogoGroup>
           </Svg>
         </Animated.View>
         <Animated.View style={[styles.name, { opacity: name, transform: [{ translateX: name.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}><Text style={[styles.nameText, { fontSize: 52 * scale, lineHeight: 54 * scale, letterSpacing: -2 * scale }]}>She{'\n'}Ready</Text></Animated.View>

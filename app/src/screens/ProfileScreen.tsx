@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '../services/accountStorage';
 import { colors } from '../theme/colors';
 import type { TargetRole } from '../features/gettingStarted/model';
 import { sectorIllustration } from '../constants/sectorIllustrations';

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import (
@@ -82,6 +82,17 @@ class Feedback(BaseModel):
     strengths: list[str] = Field(min_length=1, max_length=5)
     improvements: list[Improvement] = Field(min_length=1, max_length=10)
     recommended_activities: list[Recommendation] = Field(min_length=1, max_length=5)
+
+
+class OnboardingDocument(InputModel):
+    schema_version: Literal[1] = 1
+    created_at: datetime
+    completed: bool
+    goals: list[ShortText] = Field(max_length=10)
+    age_range: ShortText | None = None
+    daily_time_choice: ShortText | None = None
+    daily_minutes: int | None = Field(default=None, ge=1, le=120)
+    sector: ShortText | None = None
 
 
 # Contrato de planificación: los textos de entrada son datos declarados por la usuaria,

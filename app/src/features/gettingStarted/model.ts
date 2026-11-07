@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '../../services/accountStorage';
 
 /** Las mismas preguntas para todas las usuarias. */
 export const INITIAL_QUESTIONS = [

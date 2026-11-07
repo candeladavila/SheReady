@@ -160,3 +160,22 @@ def test_exit_reflection_and_single_question_interview(client):
     )
     assert answer.status_code == 200
     assert answer.json()["current_turn"] is None
+
+
+def test_plan_requires_authentication(client):
+    from auth import user_scope
+    from main import app
+
+    app.dependency_overrides.pop(user_scope, None)
+    response = client.post(
+        '/plans/generate',
+        json={
+            'context': {'strengths': [], 'improvement_areas': ['Comunicación']},
+            'target_role': {
+                'title': 'Diseñadora',
+                'sector': 'Tecnología',
+                'offer_description': 'Diseño de producto',
+            },
+        },
+    )
+    assert response.status_code == 401
