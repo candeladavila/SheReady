@@ -55,5 +55,5 @@ export default function App() {
   if (stage === 'launch') return <LaunchScreen onFinish={() => setStage('onboarding')} />;
   if (stage === 'onboarding') return <OnboardingScreen startAtForm={returnToProfile} onComplete={finishOnboarding} onSkip={finishOnboarding} />;
   if (stage === 'login') return <LoginScreen initialError={error} onSuccess={signedIn} onGuest={() => void guest()} />;
-  return <AppShell key={session?.user.id ?? 'guest'} selectedSector={sector} initialRoute={returnToProfile ? 'profile' : 'home'} completedOnboarding={completedOnboarding} accountEmail={session?.user.email} onLogin={() => { setError(''); setStage('login'); }} onLogout={() => void logout()} onOpenOnboarding={() => { setReturnToProfile(true); setStage('onboarding'); }} />;
+  return <AppShell key={session?.user.id ?? 'guest'} selectedSector={sector} initialRoute={returnToProfile ? 'profile' : 'home'} completedOnboarding={completedOnboarding} accountEmail={session?.user.email} accountName={session?.user.display_name} onLogin={() => { setError(''); setStage('login'); }} onLogout={() => void logout()} onOpenOnboarding={() => { setReturnToProfile(true); setStage('onboarding'); }} />;
 }

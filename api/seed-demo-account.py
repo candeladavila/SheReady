@@ -36,6 +36,7 @@ if __name__ == "__main__":
             db.add(
                 User(
                     id="demo",
+                    display_name="Lucía",
                     email=values["DEMO_EMAIL"],
                     password_hash=hasher.hash(values["DEMO_PASSWORD"]),
                 )

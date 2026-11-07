@@ -64,7 +64,7 @@ export type SampleContent<T> = { source: 'sample'; is_sample: true; items: T[] }
 export type NewsItem = { id: string; title: string; description: string; url: string | null };
 export type EventItem = NewsItem & { starts_at: string | null; location: string };
 export type WellbeingItem = { id: string; title: string; duration_minutes: number; steps: string[] };
-export type AuthSession = { access_token: string; token_type: string; expires_at: string; expires_in: number; user: { id: string; email: string; created_at: string } };
+export type AuthSession = { access_token: string; token_type: string; expires_at: string; expires_in: number; user: { id: string; email: string; display_name: string | null; created_at: string } };
 export type NativeAudio = { uri: string; name: string; type: string };
 // Leave room for multipart headers below Vercel's function request limit.
 const MAX_AUDIO_BYTES = 4_000_000;
@@ -168,7 +168,7 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
   return {
     auth: {
       login: (email: string, password: string) => request<AuthSession>('/auth/login', { method: 'POST', json: { email, password } }),
-      register: (email: string, password: string) => request<AuthSession>('/auth/register', { method: 'POST', json: { email, password } }),
+      register: (email: string, password: string, display_name: string) => request<AuthSession>('/auth/register', { method: 'POST', json: { email, password, display_name } }),
       me: () => request<AuthSession['user']>('/auth/me'),
       logout: () => request<void>('/auth/logout', { method: 'POST', response: 'empty' }),
     },

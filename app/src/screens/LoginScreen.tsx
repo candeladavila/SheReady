@@ -7,6 +7,7 @@ import { colors } from '../theme/colors';
 
 export default function LoginScreen({ onSuccess, onGuest, initialError = '' }: { onSuccess: (session: AuthSession) => void | Promise<void>; onGuest: () => void; initialError?: string }) {
   const [register, setRegister] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -17,11 +18,12 @@ export default function LoginScreen({ onSuccess, onGuest, initialError = '' }: {
     if (pending.current) return;
     setError('');
     if (!email.trim() || password.length < 12) { setError('Introduce tu correo y una contraseña de al menos 12 caracteres.'); return; }
+    if (register && !name.trim()) { setError('Introduce tu nombre.'); return; }
     if (register && password !== confirmation) { setError('Las contraseñas no coinciden.'); return; }
     pending.current = true; setBusy(true);
     let created = false;
     try {
-      const session = await (register ? api.auth.register(email.trim(), password) : api.auth.login(email.trim(), password));
+      const session = await (register ? api.auth.register(email.trim(), password, name.trim()) : api.auth.login(email.trim(), password));
       created = register; setRegister(false);
       await activateSession(session);
       setPassword(''); setConfirmation(''); await onSuccess(session);
@@ -33,6 +35,7 @@ export default function LoginScreen({ onSuccess, onGuest, initialError = '' }: {
     <Text style={styles.title}>{register ? 'Crea tu cuenta.\nDa el siguiente paso.' : 'Tu próximo paso\nempieza aquí.'}</Text>
     <Text style={styles.copy}>Guarda tu plan, practica entrevistas y encuentra tu progreso cuando vuelvas.</Text>
     <View style={styles.card}>
+      {register && <><Text style={styles.label}>Nombre</Text><TextInput accessibilityLabel="Nombre" value={name} onChangeText={setName} editable={!busy} autoCapitalize="words" maxLength={80} style={styles.input} placeholder="Tu nombre" placeholderTextColor={colors.subtleText} /></>}
       <Text style={styles.label}>Correo electrónico</Text><TextInput accessibilityLabel="Correo electrónico" value={email} onChangeText={setEmail} editable={!busy} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" style={styles.input} placeholder="tu@correo.com" placeholderTextColor={colors.subtleText} />
       <Text style={styles.label}>Contraseña</Text><TextInput accessibilityLabel="Contraseña" value={password} onChangeText={setPassword} editable={!busy} autoCapitalize="none" autoCorrect={false} secureTextEntry maxLength={128} autoComplete={register ? 'new-password' : 'current-password'} style={styles.input} placeholder="Al menos 12 caracteres" placeholderTextColor={colors.subtleText} onSubmitEditing={() => { if (!register) void submit(); }} />
       {register && <><Text style={styles.label}>Repite la contraseña</Text><TextInput accessibilityLabel="Repite la contraseña" value={confirmation} onChangeText={setConfirmation} placeholder="Repite tu contraseña" placeholderTextColor={colors.subtleText} editable={!busy} secureTextEntry autoCapitalize="none" maxLength={128} style={styles.input} onSubmitEditing={() => void submit()} /></>}

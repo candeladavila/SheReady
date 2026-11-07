@@ -31,7 +31,7 @@ export async function restoreSession(): Promise<AuthSession | null> {
   try { session = JSON.parse(value); } catch { await persist(null); return null; }
   if (!session.access_token || !session.user?.id || !Number.isFinite(Date.parse(session.expires_at)) || Date.parse(session.expires_at) <= Date.now()) { await persist(null); return null; }
   setAccess(session.access_token, session.user.id);
-  try { await api.auth.me(); await syncPendingProfile(); return session; }
+  try { session.user = await api.auth.me(); await persist(JSON.stringify(session)); await syncPendingProfile(); return session; }
   catch (error) { setAccess(null); if (error instanceof ApiError && error.status === 401) { await persist(null); return null; } throw error; }
 }
 export async function endSession() {
