@@ -25,6 +25,7 @@ export type ProfileInput = ProfileFields & (
 export type Profile = Omit<ProfileFields, 'age' | 'sector' | 'target_role' | 'experience_years' | 'daily_minutes'> & {
   age: number | null; sector: string | null; target_role: string | null; experience_years: number | null; daily_minutes: number | null;
   onboarding_document?: ProfileDocument;
+  goals?: string[]; age_range?: string | null; daily_time_choice?: string | null;
   id: string;
   interview_date: string | null;
   days_until_interview: number | null;
