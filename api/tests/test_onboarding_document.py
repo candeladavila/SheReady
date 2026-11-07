@@ -48,3 +48,10 @@ def test_pending_document_belongs_only_to_logged_in_account(client, profile):
     result = client.put("/profile/onboarding", json=changed, headers=a).json()
     assert result["onboarding_document"]["goals"] == changed["goals"]
     assert result["target_role"] == profile["target_role"]
+    updated = dict(changed, age_range=None, daily_time_choice="Iré día a día", daily_minutes=None, sector="Marketing")
+    result = client.put("/profile/onboarding", json=updated, headers=a).json()
+    assert result["daily_minutes"] is None
+    assert result["sector"] == "Marketing"
+    assert result["onboarding_document"]["age_range"] is None
+    assert result["target_role"] == profile["target_role"]
+    assert client.get("/profile", headers=b).status_code == 409

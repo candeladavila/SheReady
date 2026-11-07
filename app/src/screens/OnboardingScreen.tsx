@@ -24,12 +24,12 @@ const sectors = ['Tecnología', 'Marketing', 'Finanzas', 'Educación y salud', '
 const purple = colors.plum;
 const sage = colors.sage;
 
-export default function OnboardingScreen({ onComplete, onSkip, onGuestHome, onGuestNews, onLogin, guestError, startAtForm = false }: { onComplete: (document: ProfileDocument) => Promise<void>; onSkip: (document: ProfileDocument) => Promise<void>; onGuestHome: () => void; onGuestNews: () => void; onLogin: () => void; guestError?: string; startAtForm?: boolean }) {
+export default function OnboardingScreen({ onComplete, onSkip, onGuestHome, onGuestNews, onLogin, guestError, startAtForm = false, initialDocument = null, onCancel }: { onComplete: (document: ProfileDocument) => Promise<void>; onSkip: (document: ProfileDocument) => Promise<void>; onGuestHome: () => void; onGuestNews: () => void; onLogin: () => void; guestError?: string; startAtForm?: boolean; initialDocument?: ProfileDocument | null; onCancel?: () => void }) {
   const [page, setPage] = useState(startAtForm ? 2 : 1);
-  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
-  const [age, setAge] = useState('');
-  const [time, setTime] = useState('');
-  const [sector, setSector] = useState('Tecnología');
+  const [selectedGoals, setSelectedGoals] = useState<string[]>(initialDocument?.goals ?? []);
+  const [age, setAge] = useState(initialDocument?.age_range ?? '');
+  const [time, setTime] = useState(initialDocument?.daily_time_choice ?? '');
+  const [sector, setSector] = useState(initialDocument?.sector ?? 'Tecnología');
   const { width } = useWindowDimensions();
   const isTouchLayout = Platform.OS !== 'web' || width < 760;
   const toggleGoal = (goal: string) => setSelectedGoals(current => current.includes(goal) ? current.filter(item => item !== goal) : [...current, goal]);
@@ -41,9 +41,9 @@ export default function OnboardingScreen({ onComplete, onSkip, onGuestHome, onGu
     if (saving) return;
     setSaving(true); setSaveError('');
     const minutes = Number.parseInt(time, 10);
-    const document: ProfileDocument = { schema_version: 1, created_at: new Date().toISOString(), completed, goals: selectedGoals, age_range: age || null, daily_time_choice: time || null, daily_minutes: Number.isFinite(minutes) ? minutes : null, sector: page >= 5 ? sector : null };
+    const document: ProfileDocument = { schema_version: 1, created_at: initialDocument?.created_at ?? new Date().toISOString(), completed, goals: selectedGoals, age_range: age || null, daily_time_choice: time || null, daily_minutes: Number.isFinite(minutes) ? minutes : null, sector: page >= 5 ? sector : null };
     try { await (completed ? onComplete(document) : onSkip(document)); }
-    catch { setSaveError('No se pudo guardar tu perfil en este dispositivo. Inténtalo de nuevo.'); }
+    catch { setSaveError('No se pudo guardar tu información. Inténtalo de nuevo.'); }
     finally { setSaving(false); }
   }
   const next = () => page === 6 ? void finish(true) : goNext();
@@ -65,7 +65,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGuestHome, onGu
         </ScrollView>
       ) : (
         <>
-          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => setPage(page - 1)} hitSlop={12}><Text style={styles.back}>←</Text></Pressable><Text style={styles.brand}>SheReady</Text><View style={styles.headerRight}><Text style={styles.counter}>{page - 1} de 5</Text><Pressable accessibilityRole="button" onPress={() => void finish(false)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View></View>
+          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => page === 2 && onCancel ? onCancel() : setPage(page - 1)} hitSlop={12}><Text style={styles.back}>←</Text></Pressable><Text style={styles.brand}>SheReady</Text><View style={styles.headerRight}><Text style={styles.counter}>{page - 1} de 5</Text><Pressable accessibilityRole="button" onPress={() => onCancel ? onCancel() : void finish(false)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>{onCancel ? 'Cancelar' : 'Saltar'}</Text></Pressable></View></View>
           <View style={styles.progress}>{[0, 1, 2, 3, 4].map(i => <View key={i} style={[styles.progressPart, i < page - 1 && styles.progressActive]} />)}</View>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {page === 2 && <><Heading eyebrow="TU PUNTO DE PARTIDA" title={'¿Qué necesitas\nhoy?'} description="Elige uno o varios objetivos. Empezaremos por lo que más te importa." /><View style={styles.options}>{goals.map(option => <Choice key={option.label} option={option} selected={selectedGoals.includes(option.label)} multiple onPress={() => toggleGoal(option.label)} />)}</View></>}
