@@ -1,5 +1,9 @@
 # SheReady API
 
+**Autenticación individual:** consultar [AUTH.md](AUTH.md). La nueva versión requiere
+un token de sesión para los datos de producto. La cuenta demo conserva sus datos;
+las nuevas cuentas tienen perfil y progreso propios.
+
 Backend de demo con FastAPI, SQLAlchemy, PostgreSQL y Groq. Python **3.12+**.
 Gemini y Ollama siguen disponibles mediante `AI_PROVIDER`.
 
@@ -64,7 +68,7 @@ vectores ni servicios adicionales para esta demo.
 
 ## Funcionalidad y decisiones
 
-- Un perfil de prueba compartido, sin registro ni cuentas individuales.
+- Cuentas individuales con registro, login y sesiones revocables; cuenta demo precargada.
 - Onboarding obligatorio: edad, sector, puesto, años de experiencia, minutos diarios,
   al menos una fortaleza y un área de mejora, y fecha o plazo de entrevista.
 - `interview_in_days` se convierte en una fecha concreta usando `APP_TIMEZONE`.

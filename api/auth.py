@@ -8,7 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pwdlib import PasswordHash
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -28,6 +28,15 @@ class CredentialsInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     email: EmailStr = Field(max_length=254)
     password: SecretStr = Field(min_length=12, max_length=128)
+
+
+class RegistrationInput(CredentialsInput):
+    display_name: str = Field(min_length=1, max_length=80)
+
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def strip_name(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 def digest(token):
@@ -58,7 +67,7 @@ def user_scope(db: DB, user: Annotated[User, Depends(current_user)]):
 
 
 def public_user(user):
-    return {"id": user.id, "email": user.email, "created_at": user.created_at}
+    return {"id": user.id, "email": user.email, "display_name": user.display_name, "created_at": user.created_at}
 
 
 def issue_session(db, user, response):
@@ -77,9 +86,9 @@ def issue_session(db, user, response):
 
 
 @auth_router.post("/register", status_code=201)
-def register(body: CredentialsInput, db: DB, response: Response):
+def register(body: RegistrationInput, db: DB, response: Response):
     user = User(
-        email=str(body.email).lower(), password_hash=hasher.hash(body.password.get_secret_value())
+        email=str(body.email).lower(), display_name=body.display_name, password_hash=hasher.hash(body.password.get_secret_value())
     )
     db.add(user)
     try:
