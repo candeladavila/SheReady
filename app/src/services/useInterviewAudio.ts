@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { api } from './api';
+import { speakOnDevice } from './deviceSpeech';
 
 export function useInterviewAudio() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -43,6 +44,19 @@ export function useInterviewAudio() {
       await clearAudio();
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
       const generation = playbackGeneration.current;
+      const capabilities = await api.capabilities();
+      if (generation !== playbackGeneration.current) throw new Error('Reproducción cancelada.');
+      if (capabilities.speech_transport === 'device') {
+        const interview = await api.interviews.get(interviewId);
+        if (generation !== playbackGeneration.current) throw new Error('Reproducción cancelada.');
+        const turn = interview.turns.find(item => item.id === turnId);
+        if (!turn) throw new Error('No se encontró la pregunta de la entrevista.');
+        const speech = speakOnDevice(turn.question.text);
+        cancelPlayback.current = speech.cancel;
+        try { await speech.finished; }
+        finally { if (generation === playbackGeneration.current) cancelPlayback.current = null; }
+        return;
+      }
       const audio = await api.interviews.speech(interviewId, turnId);
       if (generation !== playbackGeneration.current) throw new Error('Reproducción cancelada.');
       if (Platform.OS === 'web') temporary.current = URL.createObjectURL(audio);

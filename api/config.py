@@ -9,7 +9,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     database_url: str = "postgresql+psycopg://sheready:sheready@localhost:5432/sheready"
-    ai_provider: Literal["gemini", "ollama"] = "gemini"
+    ai_provider: Literal["gemini", "ollama", "groq"] = "gemini"
+    groq_api_key: SecretStr = SecretStr("")
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_audio_model: str = "whisper-large-v3-turbo"
     ollama_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "qwen3:4b"
     ollama_timeout_seconds: int = Field(default=180, ge=5, le=600)

@@ -157,6 +157,7 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000 }: Opti
   const id = encodeURIComponent;
   const page = (limit = 20, offset = 0) => `?limit=${limit}&offset=${offset}`;
   return {
+    capabilities: () => request<{ ai_provider: 'gemini' | 'ollama' | 'groq'; ai_configured: boolean; speech_transport?: 'device' | 'server' }>('/capabilities'),
     profile: {
       options: () => request<ProfileOptions>('/profile/options'),
       get: () => request<Profile>('/profile'),

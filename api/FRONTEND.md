@@ -4,7 +4,14 @@ Todas las rutas usan la misma URL base; no hay prefijo `/api` ni `/v1`.
 Fechas: `YYYY-MM-DD`. Timestamps: ISO 8601. JSON UTF-8. Los nombres de campo están en inglés.
 En la demo todas las peticiones comparten el mismo perfil; no hace falta enviar `user_id`.
 Si el servidor configura token, añade `Authorization: Bearer <token-de-demo>`.
-La clave de Gemini nunca se incluye en Expo ni en las peticiones del navegador.
+Las claves de Groq y Gemini nunca se incluyen en Expo ni en las peticiones del navegador.
+
+`GET /capabilities` devuelve `ai_provider`, `ai_configured`, `models` y `speech_transport`.
+Si `speech_transport=device` (Groq), obtiene el texto desde `GET /interviews/{id}` y lee
+la pregunta del turno con `expo-speech`, idioma `es-ES`. Espera `onDone` antes de grabar.
+Cancelar o salir debe detener la voz; un error de voz no debe activar el micrófono.
+Si `speech_transport=server`, utiliza el endpoint WAV `/interviews/{id}/turns/{turn_id}/speech`.
+Las grabaciones siguen pasando por `/transcriptions`, independientemente del proveedor.
 
 ## Perfil y onboarding
 

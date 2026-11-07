@@ -20,6 +20,9 @@ importers:
       expo-file-system:
         specifier: ~58.0.13
         version: 58.0.13(expo@58.0.23)(react-native@0.88.1)
+      expo-speech:
+        specifier: ~58.0.3
+        version: 58.0.3(expo@58.0.23)
       expo-status-bar:
         specifier: ~58.0.4
         version: 58.0.4(expo@58.0.23)(react-native@0.88.1)(react@19.3.0)
@@ -2714,6 +2717,14 @@ packages:
   /expo-server@58.0.6:
     resolution: {integrity: sha512-6DBlSZwxk3J0y1j2s4XebAWNiwGaMp32NcWX7b2kJC2+EFf1g+pCcVmx8ylawt2tyLmbDHswm4MHOfrd4bqfvA==}
     engines: {node: ^22.13.0 || ^24.3.0 || ^26.0.0 || >=27.0.0}
+    dev: false
+
+  /expo-speech@58.0.3(expo@58.0.23):
+    resolution: {integrity: sha512-jdMTqWL6ciDM8aVJe2/l2g6GTVaK7i/zBOVUhTq+l0Y+DOCz3Nh4HqNrMwmIKzXrlsxRv3ejmjSQPlX1lfOTOA==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 58.0.23(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0)(react-native-web@0.21.4)(react-native-webview@14.0.1)(react-native@0.88.1)(react@19.3.0)(typescript@6.0.3)
     dev: false
 
   /expo-status-bar@58.0.4(expo@58.0.23)(react-native@0.88.1)(react@19.3.0):

@@ -1,7 +1,7 @@
 # SheReady API
 
-Backend de demo con FastAPI, SQLAlchemy, PostgreSQL y Gemini. Python **3.12+**.
-La app móvil/web se desarrolla por separado en `app/`; este cambio solo afecta a `api/`.
+Backend de demo con FastAPI, SQLAlchemy, PostgreSQL y Groq. Python **3.12+**.
+Gemini y Ollama siguen disponibles mediante `AI_PROVIDER`.
 
 ## Arranque local
 
@@ -11,7 +11,7 @@ Desde la carpeta `api/`, en PowerShell:
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
 Copy-Item .env.example .env
-# Edita .env e introduce GEMINI_API_KEY. No subas .env a Git.
+# Edita .env e introduce GROQ_API_KEY. No subas .env a Git.
 docker compose up -d db
 .\.venv\Scripts\python -m alembic upgrade head
 .\.venv\Scripts\python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -32,11 +32,26 @@ origen exacto del frontend a `CORS_ORIGINS`. La web publicada necesita HTTPS par
 
 ## Configuración de IA y coste
 
-Crea una API key en Google AI Studio e introdúcela únicamente en `.env` o en las variables
-del servidor. Los modelos son configurables con `GEMINI_MODEL`, `GEMINI_AUDIO_MODEL` y
-`GEMINI_TTS_MODEL`; los nombres de `.env.example` son puntos de partida, no una garantía
-de acceso o cuota gratuita. Comprueba los modelos habilitados en tu proyecto antes de la demo.
-La transcripción usa audio inline; no se crean archivos persistentes en Google Files API.
+Selecciona `AI_PROVIDER=groq` y guarda `GROQ_API_KEY` únicamente en `.env` o como secreto
+del servidor. La plantilla `groq.env.example` contiene la configuración mínima, pero no
+debes copiarla sobre un `.env` que ya contenga tus credenciales de base de datos.
+Por defecto, `GROQ_MODEL=openai/gpt-oss-120b` genera preguntas, actividades y feedback;
+`GROQ_AUDIO_MODEL=whisper-large-v3-turbo` transcribe las grabaciones en español mediante
+multipart. El audio se envía a Groq para procesarlo; esta aplicación no lo conserva.
+La cuota gratuita depende de la cuenta y se comparte entre todas las usuarias. Consulta
+los [límites de Groq](https://console.groq.com/docs/rate-limits); no se activa un plan de pago.
+
+Con Groq, `GET /capabilities` indica `speech_transport=device`. El cliente utiliza
+`expo-speech` para leer el texto de la pregunta en español y solo después abre el micrófono.
+No requiere Ollama, Whisper local, PowerShell ni dependencias de `requirements-local-audio.txt`.
+La voz disponible depende del navegador/dispositivo; en iPhone hay que desactivar el modo
+silencio. Hay que probar la reproducción y permisos de micrófono en la web HTTPS desde los
+móviles que se usarán en la demo. El endpoint antiguo `/speech` devuelve 409 en este modo:
+el cliente debe consultar las capacidades y usar la voz del dispositivo.
+
+Para seleccionar Gemini utiliza `AI_PROVIDER=gemini`, `GEMINI_API_KEY` y sus variables
+`GEMINI_MODEL`, `GEMINI_AUDIO_MODEL` y `GEMINI_TTS_MODEL`. Comprueba el acceso a los modelos
+en la cuenta correspondiente antes de cambiar de proveedor.
 
 No hay modo de respuestas prefabricadas para IA. Sin clave devuelve 503; cuota agotada,
 429; respuesta inválida o fallo del proveedor, 502; timeout, 504. Los mocks existen solo

@@ -35,7 +35,7 @@ app = FastAPI(
     title="SheReady API",
     version="1.0.0",
     description=(
-        "Backend de demo con un perfil compartido. IA real mediante Gemini; contenido editorial de ejemplo. "
+        "Backend de demo con un perfil compartido. IA real mediante un proveedor configurable; contenido editorial de ejemplo. "
         "Configura DEMO_ACCESS_TOKEN si expones la API. Los endpoints no implementan cuentas individuales."
     ),
 )
@@ -96,17 +96,31 @@ def ready(db: DB):
 @router.get("/capabilities", tags=["system"])
 def capabilities():
     s = get_settings()
+    models = {
+        "groq": {"text": s.groq_model, "audio": s.groq_audio_model, "speech": "device-speech-es"},
+        "ollama": {
+            "text": s.ollama_model,
+            "audio": "whisper-base-local",
+            "speech": "windows-speech-es",
+        },
+        "gemini": {
+            "text": s.gemini_model,
+            "audio": s.gemini_audio_model,
+            "speech": s.gemini_tts_model,
+        },
+    }
     return {
         "demo_shared_profile": True,
-        "ai_configured": bool(s.gemini_api_key.get_secret_value())
-        if s.ai_provider == "gemini"
-        else True,
+        "ai_configured": (
+            bool(s.groq_api_key.get_secret_value())
+            if s.ai_provider == "groq"
+            else bool(s.gemini_api_key.get_secret_value())
+            if s.ai_provider == "gemini"
+            else True
+        ),
         "ai_provider": s.ai_provider,
-        "models": {
-            "text": s.ollama_model if s.ai_provider == "ollama" else s.gemini_model,
-            "audio": s.gemini_audio_model if s.ai_provider == "gemini" else "whisper-base-local",
-            "speech": s.gemini_tts_model if s.ai_provider == "gemini" else "windows-speech-es",
-        },
+        "models": models[s.ai_provider],
+        "speech_transport": "device" if s.ai_provider == "groq" else "server",
         "models_verified": False,
         "content_source": "sample",
         "interview_durations": [3, 5, 10, 15],

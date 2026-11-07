@@ -183,6 +183,10 @@ class GeminiProvider:
 
 
 def get_ai():
+    if get_settings().ai_provider == "groq":
+        from groq_provider import GroqProvider
+
+        return GroqProvider()
     if get_settings().ai_provider == "ollama":
         from ollama_provider import OllamaProvider
 
