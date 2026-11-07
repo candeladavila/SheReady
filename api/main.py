@@ -192,10 +192,14 @@ def save_onboarding(body: OnboardingDocument, db: DB):
     )
     data["onboarding_document"] = body.model_dump(mode="json")
     data["goals"] = body.goals
-    if body.sector:
+    if body.completed:
         data["sector"] = body.sector
-    if body.daily_minutes:
         data["daily_minutes"] = body.daily_minutes
+    else:
+        if body.sector:
+            data["sector"] = body.sector
+        if body.daily_minutes:
+            data["daily_minutes"] = body.daily_minutes
     if item:
         item.data = data
     else:

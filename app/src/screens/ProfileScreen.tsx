@@ -6,6 +6,7 @@ import { colors } from '../theme/colors';
 import { PAGE_MAX_WIDTH } from '../theme/layout';
 import type { RolePlan } from '../services/api';
 import type { TargetRole } from '../features/gettingStarted/model';
+import type { ProfileDocument } from '../services/profileDocument';
 import { sectorIllustration } from '../constants/sectorIllustrations';
 
 type Interview = { id: string; company: string; role: string; date: string; time: string; offerUrl: string; description: string; notes: string; feedback: string };
@@ -27,7 +28,7 @@ function countdown(date: Date, now: number) {
 }
 function dateLabel(date: Date) { return new Intl.DateTimeFormat('es-ES', { dateStyle: 'long', timeStyle: 'short' }).format(date); }
 
-export default function ProfileScreen({ name, onDeleteAccount, onLogout, rolePlans, activePlanId, onSelectPlan, selectedSector, completedOnboarding, initialInterviewCompleted, targetRole, onOpenInitialInterview, onOpenTargetRole, onMeditation }: { name?: string | null; onDeleteAccount: (password: string) => Promise<void>; onLogout: () => void; rolePlans: RolePlan[]; activePlanId: string | null; onSelectPlan: (plan: RolePlan) => Promise<void>; selectedSector?: string; completedOnboarding: boolean; initialInterviewCompleted: boolean; targetRole: TargetRole | null; onOpenInitialInterview: () => void; onOpenTargetRole: () => void; onMeditation: () => void }) {
+export default function ProfileScreen({ onboardingDocument, onOpenOnboarding, name, onDeleteAccount, onLogout, rolePlans, activePlanId, onSelectPlan, selectedSector, completedOnboarding, initialInterviewCompleted, targetRole, onOpenInitialInterview, onOpenTargetRole, onMeditation }: { onboardingDocument: ProfileDocument | null; onOpenOnboarding: () => Promise<void>; name?: string | null; onDeleteAccount: (password: string) => Promise<void>; onLogout: () => void; rolePlans: RolePlan[]; activePlanId: string | null; onSelectPlan: (plan: RolePlan) => Promise<void>; selectedSector?: string; completedOnboarding: boolean; initialInterviewCompleted: boolean; targetRole: TargetRole | null; onOpenInitialInterview: () => void; onOpenTargetRole: () => void; onMeditation: () => void }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [view, setView] = useState<ViewName>('interviews');
@@ -92,10 +93,16 @@ export default function ProfileScreen({ name, onDeleteAccount, onLogout, rolePla
         <View style={[styles.streakCard, wide && styles.streakCardWide]}><View><Text style={styles.eyebrow}>TU RACHA · EJEMPLO</Text><Text style={styles.streakTitle}><Text style={{ color: colors.plum }}>12 días</Text> seguidos</Text><Text style={styles.hint}>Tu mejor racha. Entra mañana para llegar a 13.</Text></View><View style={styles.weekDays}>{['L','M','X','J','V','S','D'].map((day, index) => <View key={index} style={styles.weekDay}><View style={[styles.dayBox, index < 5 && styles.dayDone, index === 5 && styles.dayToday]}><Text style={[styles.dayText, index < 5 && styles.dayTextDone]}>{index < 5 ? '✓' : index === 5 ? 'Hoy' : ''}</Text></View><Text style={styles.dayLabel}>{day}</Text></View>)}</View></View>
       </>}
       <View style={[styles.profileSections, wide && styles.profileSectionsWide]}>
-      {completedOnboarding && <View style={styles.profileSection}>
-        <View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>TU ONBOARDING</Text><Text style={styles.sectionTitle}>Lo que nos contaste</Text></View></View>
-        <View style={styles.summaryCard}>{[['Sector', selectedSector || 'Sin seleccionar'], ['Objetivos', 'Disponibles al conectar tu perfil'], ['Tu ritmo', 'Disponible próximamente']].map(([label, value]) => <View key={label} style={styles.summaryRow}><Text style={styles.summaryLabel}>{label}</Text><Text style={styles.summaryValue}>{value}</Text></View>)}</View>
-      </View>}
+      <View style={styles.profileSection}>
+        <View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>TU ONBOARDING</Text><Text style={styles.sectionTitle}>Información sobre ti</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Editar información sobre ti" onPress={() => { setError(''); void onOpenOnboarding().catch(() => setError('No se ha podido cargar tu información. Inténtalo de nuevo.')); }} style={styles.sectionAction}><Text style={styles.linkText}>{onboardingDocument ? 'Editar' : 'Añadir'} ↗</Text></Pressable></View>
+        <View style={styles.summaryCard}>{[
+          ['Objetivos', onboardingDocument?.goals.length ? onboardingDocument.goals.join(', ') : 'Sin indicar'],
+          ['Edad', onboardingDocument?.age_range || 'Sin indicar'],
+          ['Tu ritmo', onboardingDocument?.daily_time_choice || 'Sin indicar'],
+          ['Sector', onboardingDocument?.sector || 'Sin indicar'],
+        ].map(([label, value]) => <View key={label} style={styles.summaryRow}><Text style={styles.summaryLabel}>{label}</Text><Text style={styles.summaryValue}>{value}</Text></View>)}</View>
+        {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      </View>
       <View style={styles.profileSection}><View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>TU PRÓXIMA OPORTUNIDAD</Text><Text style={styles.sectionTitle}>Puesto que preparas</Text></View><Pressable accessibilityRole="button" onPress={onOpenTargetRole} style={styles.sectionAction}><Text style={styles.linkText}>{targetRole ? 'Editar' : 'Añadir'} ↗</Text></Pressable></View><View style={styles.summaryCard}><Text style={styles.hint}>{targetRole ? `${targetRole.role}${targetRole.company ? ` · ${targetRole.company}` : ''}` : 'Añade el puesto que te gustaría preparar.'}</Text>{rolePlans.filter(plan => plan.status === 'ready').length > 1 && rolePlans.filter(plan => plan.status === 'ready').map(plan => <Pressable key={plan.id} accessibilityRole="radio" accessibilityState={{ checked: plan.id === activePlanId }} onPress={() => { void onSelectPlan(plan).catch(() => setError('No se ha podido seleccionar el puesto.')); }} style={styles.summaryRow}><Text style={styles.summaryValue}>{plan.id === activePlanId ? '●' : '○'}  {plan.role.title}{plan.role.company ? ` · ${plan.role.company}` : ''}</Text></Pressable>)}{!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}</View></View>
       </View>
       <View style={styles.sectionHeader}><View><Text style={styles.eyebrow}>TU RECORRIDO PROFESIONAL</Text><Text style={styles.sectionTitle}>Mis entrevistas reales</Text></View><Pressable accessibilityRole="button" onPress={() => openEdit()} style={styles.sectionAction}><Text style={styles.linkText}>Añadir entrevista ↗</Text></Pressable></View>
