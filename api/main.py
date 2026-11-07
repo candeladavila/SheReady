@@ -17,7 +17,15 @@ from content import CONTENT, SKILLS
 from database import get_db
 from middleware import BodyLimitMiddleware
 from models import Activity, Interview, InterviewTurn, Profile, WellbeingCompletion, now
-from schemas import AnswerInput, InterviewInput, OnboardingDocument, ProfileInput, TurnAnswerInput
+from schemas import (
+    AnswerInput,
+    InterviewInput,
+    OnboardingDocument,
+    PersonalizedPlan,
+    PlanRequest,
+    ProfileInput,
+    TurnAnswerInput,
+)
 from services import (
     activity_or_404,
     activity_view,
@@ -258,6 +266,12 @@ def answer_activity(activity_id: str, body: AnswerInput, db: DB, ai: AI):
     return activity_view(item)
 
 
+@router.post("/plans/generate", response_model=PersonalizedPlan, tags=["planning"])
+def generate_personalized_plan(body: PlanRequest, ai: AI):
+    """Genera el contrato completo; la persistencia y selección cíclica son posteriores."""
+    return ai.plan(body.context.model_dump(), body.target_role.model_dump())
+
+
 @router.post("/interviews", status_code=201, tags=["interviews"])
 def start_interview(body: InterviewInput, db: DB, ai: AI):
     profile = profile_or_404(db)
@@ -266,7 +280,7 @@ def start_interview(body: InterviewInput, db: DB, ai: AI):
     interview = Interview(
         profile_id=profile.id,
         duration_minutes=body.duration_minutes,
-        max_questions={3: 2, 5: 3, 10: 5, 15: 7}[body.duration_minutes],
+        max_questions={1: 1, 3: 2, 5: 3, 10: 5, 15: 7}[body.duration_minutes],
         profile_snapshot=snapshot,
     )
     interview.turns.append(InterviewTurn(position=1, question=question.model_dump()))

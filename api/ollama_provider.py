@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from ai import SYSTEM, GeminiProvider
 from config import get_settings
+from schemas import PersonalizedPlan
 
 
 class OllamaProvider(GeminiProvider):
@@ -31,7 +32,7 @@ class OllamaProvider(GeminiProvider):
                     + json.dumps(data, ensure_ascii=False, default=str),
                 },
             ],
-            "options": {"temperature": 0.3, "num_ctx": 8192, "num_predict": 3000},
+            "options": {"temperature": 0.3, "num_ctx": 32768 if schema is PersonalizedPlan else 8192, "num_predict": 16000 if schema is PersonalizedPlan else 3000},
         }
         try:
             with httpx.Client(timeout=settings.ollama_timeout_seconds, trust_env=False) as client:
