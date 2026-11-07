@@ -54,7 +54,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGuestHome, onGu
       <StatusBar style="dark" />{saveError ? <Text accessibilityRole="alert" style={styles.helper}>{saveError}</Text> : null}
       {page === 1 ? (
         <ScrollView contentContainerStyle={styles.intro}>
-          <View style={styles.introHeader}><Text style={styles.brand}>SheReady</Text></View>
+          <View style={styles.introHeader}><Text style={styles.brand}>SheReady</Text><Pressable accessibilityRole="button" accessibilityState={{ disabled: saving }} disabled={saving} onPress={() => void finish(false)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View>
           <View style={styles.welcomeIntro}><Text style={styles.eyebrow}>TU ESPACIO, TU CAMINO</Text><Text style={styles.introTitle}>Un paso a tu ritmo.</Text><Text style={styles.description}>Empieza por donde quieras.</Text></View>
           <View style={styles.entryOptions}>
             <Entry label="Inicio" detail="Entra como invitada" icon="home" onPress={onGuestHome} />
