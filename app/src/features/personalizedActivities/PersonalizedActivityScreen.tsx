@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import storage from '../../services/accountStorage';
-import type { PlannedActivity } from '../../services/api';
+import { api, type PlannedActivity } from '../../services/api';
 import { colors } from '../../theme/colors';
 
 export default function PersonalizedActivityScreen({ activity, planId, index, onBack }: { activity: PlannedActivity; planId: string; index: number; onBack: () => void }) {
@@ -10,10 +10,11 @@ export default function PersonalizedActivityScreen({ activity, planId, index, on
   const [answers, setAnswers] = useState(activity.prompts.map(() => ''));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const completionId = useRef(`personalized-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   async function finish() {
     if (busy) return;
     setBusy(true); setError('');
-    try { await storage.setItem(`@sheready/personalized/${planId}/${index}`, JSON.stringify({ answers, completedAt: new Date().toISOString() })); setDone(true); }
+    try { await storage.setItem(`@sheready/personalized/${planId}/${index}`, JSON.stringify({ answers, completedAt: new Date().toISOString() })); await api.wellbeingComplete({ id: completionId.current, kind: 'personalized', duration_seconds: 0 }); setDone(true); }
     catch { setError('No se ha podido guardar tu actividad. Inténtalo de nuevo.'); }
     finally { setBusy(false); }
   }
