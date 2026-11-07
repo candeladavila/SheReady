@@ -1,0 +1,15 @@
+# Actualidad: configuración y límites
+
+La pantalla utiliza `GET /news` y `GET /events`. Los sectores son los del onboarding: Tecnología, Marketing, Finanzas, Educación y salud, Comercio y servicios y Otro sector. «Aún no lo sé» no es una categoría editorial y usa Otro sector. Las consultas y palabras clave son heurísticas y requieren revisión editorial; no garantizan relevancia ni cobertura completa.
+
+## Fuentes
+
+* Málaga: CSV anual de Datos Abiertos, codificación UTF-8 o Windows-1252. Solo se muestran actividades futuras, relevantes y con enlace original. Hay actividades sin enlace que no se publican. La fecha es la declarada por el dataset; cuando carece de hora no se muestra una hora inventada. Ayuntamiento de Málaga, CC BY 4.0; datos filtrados y normalizados.
+* Madrid: `https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json`. La URL CKAN del documento devolvió 404 en la comprobación. El JSON oficial contiene caracteres de control sin escapar y se lee en modo tolerante. Ayuntamiento de Madrid, CC BY 4.0; datos filtrados y normalizados. Las series no se expanden en sesiones independientes.
+* GNews: desactivado por defecto. Para desarrollo no comercial configura `ENABLE_GNEWS=true` y `GNEWS_API_KEY` en el servidor. En producción configura `CONTENT_ENVIRONMENT=production`; además de la clave y la activación, `GNEWS_COMMERCIAL_LICENSE=true` solo debe establecerse tras verificar un contrato que permita ese uso y la reutilización de extractos. Se consultan artículos en inglés, con título, descripción limitada a 250 caracteres, medio y enlace; se descartan imágenes y texto completo. Sin clave se muestra una selección editorial manual por sector, con resúmenes propios y enlaces a fuentes institucionales. No es un feed de noticias actualizado automáticamente; algunas fuentes son informes o recursos, no noticias recientes. La relevancia por palabras es aproximada.
+
+No hay Ticketmaster, Guardian ni RSS conectados. Cloudinary no está configurado: alojar imágenes allí no concede derechos de reproducción. Se evita usar fotografías hasta disponer de derechos y configuración explícitos.
+
+Las respuestas se cachean en memoria durante una hora por proceso y consulta, con timeout de 15 segundos. Si falla una actualización, se conserva la última respuesta de ese proceso con estado `stale`; un fallo inicial se indica como `error`. La caché se pierde al reiniciar y no se comparte entre instancias. La actualización se hace al recibir una petición tras caducar la caché: no hay cron ni persistencia de contenido. En serverless o despliegues multiinstancia se requiere un almacenamiento compartido y una tarea programada antes de depender de cuotas y disponibilidad. No se inventan distancias ni precios; las cancelaciones se filtran solo cuando el texto las indica. Fechas, cambios y cancelaciones deben confirmarse en la fuente.
+
+Los parámetros `sector`, `city`, `limit` y `offset` se validan en los endpoints; la interfaz muestra las primeras páginas. Las pruebas usan respuestas simuladas y no consumen cuota. No se ha verificado una clave GNews real ni los derechos de imágenes.

@@ -87,8 +87,8 @@ vectores ni servicios adicionales para esta demo.
 - La personalización se lee de los registros actuales: al borrar una entrevista se elimina
   su feedback del contexto futuro y se recalculan sus contribuciones al progreso. Actividades
   ya generadas y completadas siguen siendo prácticas independientes.
-- Noticias, eventos y bienestar son contenido editorial de ejemplo, con `is_sample: true`.
-  Los eventos ficticios no tienen fecha ni enlace de inscripción. No hay fuentes en vivo.
+- Noticias y eventos usan proveedores configurables; consulta [Actualidad](ACTUALIDAD.md).
+  Bienestar sigue siendo contenido editorial de ejemplo.
 
 ## Persistencia y estructura
 

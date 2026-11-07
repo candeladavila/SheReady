@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     max_audio_bytes: int = Field(default=8 * 1024 * 1024, ge=1024, le=15 * 1024 * 1024)
     cors_origins: str = "http://localhost:8081,http://localhost:19006"
     demo_access_token: SecretStr = SecretStr("")
+    enable_gnews: bool = False
+    gnews_api_key: SecretStr = SecretStr("")
+    content_environment: str = "production"
+    gnews_commercial_license: bool = False
     app_timezone: str = "Europe/Madrid"
 
     @field_validator("app_timezone")
@@ -53,3 +57,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
