@@ -1,7 +1,7 @@
 import { api } from '../services/api';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '../services/accountStorage';
 import { colors } from '../theme/colors';
 
 type Props = { kind: 'mini' | 'confidence'; onBack: () => void };

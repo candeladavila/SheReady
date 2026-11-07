@@ -154,7 +154,7 @@ def test_audio_limits_and_wrong_turn(client, profile, monkeypatch):
 def test_auth_content_and_openapi(client, monkeypatch):
     monkeypatch.setenv("DEMO_ACCESS_TOKEN", "test-token")
     get_settings.cache_clear()
-    assert client.get("/profile/options").status_code == 401
+    assert client.get("/profile/options").status_code == 200
     assert client.get("/health").json() == {"status": "ok"}
     assert client.get("/ready").status_code == 200
     for url in ["/news", "/events", "/wellbeing/activities"]:

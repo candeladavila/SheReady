@@ -9,6 +9,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     database_url: str = "postgresql+psycopg://sheready:sheready@localhost:5432/sheready"
+    migration_database_url: str = ""
+    database_pooling: Literal["queue", "null"] = "queue"
     ai_provider: Literal["gemini", "ollama", "groq"] = "gemini"
     groq_api_key: SecretStr = SecretStr("")
     groq_model: str = "openai/gpt-oss-120b"
@@ -35,9 +37,17 @@ class Settings(BaseSettings):
 
     @property
     def sqlalchemy_url(self) -> str:
-        if self.database_url.startswith(("postgres://", "postgresql://")):
-            return "postgresql+psycopg://" + self.database_url.split("://", 1)[1]
-        return self.database_url
+        return self.normalize_database_url(self.database_url)
+
+    @property
+    def migration_sqlalchemy_url(self) -> str:
+        return self.normalize_database_url(self.migration_database_url or self.database_url)
+
+    @staticmethod
+    def normalize_database_url(url: str) -> str:
+        if url.startswith(("postgres://", "postgresql://")):
+            return "postgresql+psycopg://" + url.split("://", 1)[1]
+        return url
 
 
 @lru_cache

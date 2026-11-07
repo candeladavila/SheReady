@@ -13,7 +13,7 @@ def today():
 
 
 def profile_or_404(db):
-    profile = db.get(Profile, "demo")
+    profile = db.get(Profile, db.info["user_id"])
     if not profile:
         raise HTTPException(409, "Completa primero el onboarding mediante PUT /profile.")
     return profile
@@ -35,7 +35,7 @@ def activity_or_404(db, activity_id):
 
 def ai_profile(profile):
     # Age is kept in the profile, but is not needed for question generation.
-    return {k: v for k, v in profile.data.items() if k != "age"}
+    return {k: v for k, v in profile.data.items() if k not in {"age", "onboarding_document"}}
 
 
 def personalization(db):

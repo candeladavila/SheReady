@@ -20,6 +20,9 @@ importers:
       expo-file-system:
         specifier: ~58.0.13
         version: 58.0.13(expo@58.0.23)(react-native@0.88.1)
+      expo-secure-store:
+        specifier: ~58.0.2
+        version: 58.0.2(expo@58.0.23)
       expo-speech:
         specifier: ~58.0.3
         version: 58.0.3(expo@58.0.23)
@@ -2712,6 +2715,14 @@ packages:
       '@expo/modules-macros-linux-x64': 0.29.0
       '@expo/modules-macros-win32-arm64': 0.29.0
       '@expo/modules-macros-win32-x64': 0.29.0
+    dev: false
+
+  /expo-secure-store@58.0.2(expo@58.0.23):
+    resolution: {integrity: sha512-VupWWEuQF6IiQ06McSymtn7/tehs8ifThhFwAU4UK8poomZcaa2S0UVt/y7G2XozBdkI3xpiPSx+r0pS2zsuYQ==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 58.0.23(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0)(react-native-web@0.21.4)(react-native-webview@14.0.1)(react-native@0.88.1)(react@19.3.0)(typescript@6.0.3)
     dev: false
 
   /expo-server@58.0.6:

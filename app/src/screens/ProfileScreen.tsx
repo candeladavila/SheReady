@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '../services/accountStorage';
 import { colors } from '../theme/colors';
 
 type Interview = { id: string; company: string; role: string; date: string; time: string; offerUrl: string; description: string; notes: string; feedback: string };

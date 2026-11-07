@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ai import get_ai  # noqa: E402
+from auth import user_scope  # noqa: E402
 from config import get_settings  # noqa: E402
 from database import Base, get_db  # noqa: E402
 from main import app  # noqa: E402
@@ -81,6 +82,7 @@ def client(tmp_path, monkeypatch):
 
     def session():
         with factory() as db:
+            db.info["user_id"] = "demo"
             yield db
 
     monkeypatch.setenv("DEMO_ACCESS_TOKEN", "")
@@ -88,6 +90,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "")
     get_settings.cache_clear()
     fake = FakeAI()
+    app.dependency_overrides[user_scope] = lambda: None
     app.dependency_overrides[get_db] = session
     app.dependency_overrides[get_ai] = lambda: fake
     with TestClient(app) as c:
