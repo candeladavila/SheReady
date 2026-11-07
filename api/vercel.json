@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "buildCommand": "python -m alembic upgrade head",
+  "env": {
+    "AI_PROVIDER": "groq",
+    "DATABASE_POOLING": "null",
+    "MAX_AUDIO_BYTES": "4000000"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+.expo/
+.vercel/
+.env
+.env.*
+dist/
+templates/
+*.log

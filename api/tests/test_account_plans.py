@@ -17,7 +17,7 @@ def test_initial_context_and_plans_are_private_and_reused(client):
         return PersonalizedPlan.model_validate(plan_data())
     client.fake_ai.plan = plan
     def account(name):
-        result = client.post('/auth/register', json={'email': name, 'password': 'password-123456'})
+        result = client.post('/auth/register', json={'email': name, 'password': 'password-123456', 'display_name': 'Lucía'})
         assert result.status_code == 201
         return {'Authorization': 'Bearer ' + result.json()['access_token']}
     a, b = account('one@example.com'), account('two@example.com')
@@ -87,7 +87,7 @@ def test_initial_context_and_plans_are_private_and_reused(client):
 
 def test_failed_plan_can_be_retried(client):
     app.dependency_overrides.pop(user_scope)
-    result = client.post('/auth/register', json={'email': 'retry@example.com', 'password': 'password-123456'})
+    result = client.post('/auth/register', json={'email': 'retry@example.com', 'password': 'password-123456', 'display_name': 'Lucía'})
     headers = {'Authorization': 'Bearer ' + result.json()['access_token']}
     client.fake_ai.initial_profile = lambda answers, onboarding: InitialProfileContext(
         strengths=['Escucha'], improvement_areas=['Ejemplos'], preferences=[])
@@ -116,7 +116,7 @@ def test_failed_plan_can_be_retried(client):
 def test_initial_interview_provider_failure_does_not_complete_profile(client):
     app.dependency_overrides.pop(user_scope)
     assert client.get('/profile/initial-interview').status_code == 401
-    result = client.post('/auth/register', json={'email': 'failure@example.com', 'password': 'password-123456'})
+    result = client.post('/auth/register', json={'email': 'failure@example.com', 'password': 'password-123456', 'display_name': 'Lucía'})
     headers = {'Authorization': 'Bearer ' + result.json()['access_token']}
     def unavailable(answers, onboarding):
         raise HTTPException(503, 'IA no disponible')
@@ -132,7 +132,7 @@ def test_concurrent_plan_generation_calls_provider_once(client):
     from threading import Event
 
     app.dependency_overrides.pop(user_scope)
-    result = client.post('/auth/register', json={'email': 'race@example.com', 'password': 'password-123456'})
+    result = client.post('/auth/register', json={'email': 'race@example.com', 'password': 'password-123456', 'display_name': 'Lucía'})
     headers = {'Authorization': 'Bearer ' + result.json()['access_token']}
     client.fake_ai.initial_profile = lambda answers, onboarding: InitialProfileContext(
         strengths=['Escucha'], improvement_areas=['Ejemplos'], preferences=[])

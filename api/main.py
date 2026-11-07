@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
@@ -14,6 +14,7 @@ from ai import get_ai
 from auth import auth_router, user_scope
 from config import get_settings
 from content import CONTENT, SKILLS
+from current_content import SECTORS, cached, load_events, load_news
 from database import get_db
 from middleware import BodyLimitMiddleware
 from models import Activity, Interview, InterviewTurn, Profile, RolePlan, WellbeingCompletion, now
@@ -504,13 +505,20 @@ def progress(db: DB):
 
 
 @router.get("/news", tags=["content"])
-def news():
-    return {"source": "sample", "is_sample": True, "items": CONTENT["news"]}
+def news(sector: str = "Otro sector", limit: int = Query(10, ge=1, le=50), offset: int = Query(0, ge=0)):
+    if sector not in SECTORS:
+        raise HTTPException(422, "Sector no disponible.")
+    result = cached(("news", sector), lambda: load_news(sector))
+    return {**result, "total": len(result["items"]), "items": result["items"][offset:offset + limit], "source": "GNews", "is_sample": False}
 
 
 @router.get("/events", tags=["content"])
-def events():
-    return {"source": "sample", "is_sample": True, "items": CONTENT["events"]}
+def events(city: str = "Málaga", sector: str | None = None, limit: int = Query(20, ge=1, le=50), offset: int = Query(0, ge=0)):
+    if city not in ("Madrid", "Málaga") or (sector and sector not in SECTORS):
+        raise HTTPException(422, "Ciudad o sector no disponible.")
+    result = cached(("events", city), lambda: load_events(city))
+    items = [i for i in result["items"] if datetime.fromisoformat(i["starts_at"]) >= datetime.now(timezone.utc) and (not sector or sector in i["sectors"])]
+    return {**result, "total": len(items), "items": items[offset:offset + limit], "source": city, "is_sample": False}
 
 
 @router.get("/wellbeing/activities", tags=["content"])

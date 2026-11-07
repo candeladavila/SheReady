@@ -7,3 +7,4 @@ api/.pytest_cache/
 .env
 .env.*
 !.env.example
+.vercel/

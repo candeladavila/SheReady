@@ -167,9 +167,11 @@ def test_auth_content_and_openapi(client, monkeypatch):
     assert client.get("/profile/options").status_code == 200
     assert client.get("/health").json() == {"status": "ok"}
     assert client.get("/ready").status_code == 200
-    for url in ["/news", "/events", "/wellbeing/activities"]:
+    monkeypatch.setattr("main.load_events", lambda city: {"items": [], "status": "ok", "updated_at": None})
+    for url in ["/news", "/events"]:
         response = client.get(url, headers={"Authorization": "Bearer test-token"})
-        assert response.status_code == 200 and response.json()["is_sample"] is True
+        assert response.status_code == 200 and response.json()["is_sample"] is False
+    assert client.get("/wellbeing/activities", headers={"Authorization": "Bearer test-token"}).json()["is_sample"] is True
     assert (
         "/interviews/{interview_id}/transcriptions" in client.get("/openapi.json").json()["paths"]
     )

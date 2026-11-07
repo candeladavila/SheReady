@@ -18,7 +18,7 @@ def test_pending_document_belongs_only_to_logged_in_account(client, profile):
 
     def account(email):
         result = client.post(
-            "/auth/register", json={"email": email, "password": "a-long-test-password-123"}
+            "/auth/register", json={"email": email, "password": "a-long-test-password-123", "display_name": "Alicia"}
         )
         assert result.status_code == 201
         return {"Authorization": "Bearer " + result.json()["access_token"]}

@@ -1,5 +1,9 @@
 # SheReady API
 
+**Autenticación individual:** consultar [AUTH.md](AUTH.md). La nueva versión requiere
+un token de sesión para los datos de producto. La cuenta demo conserva sus datos;
+las nuevas cuentas tienen perfil y progreso propios.
+
 Backend de demo con FastAPI, SQLAlchemy, PostgreSQL y Groq. Python **3.12+**.
 Gemini y Ollama siguen disponibles mediante `AI_PROVIDER`.
 
@@ -64,7 +68,7 @@ vectores ni servicios adicionales para esta demo.
 
 ## Funcionalidad y decisiones
 
-- Un perfil de prueba compartido, sin registro ni cuentas individuales.
+- Cuentas individuales con registro, login y sesiones revocables; cuenta demo precargada.
 - Onboarding obligatorio: edad, sector, puesto, años de experiencia, minutos diarios,
   al menos una fortaleza y un área de mejora, y fecha o plazo de entrevista.
 - `interview_in_days` se convierte en una fecha concreta usando `APP_TIMEZONE`.
@@ -83,8 +87,8 @@ vectores ni servicios adicionales para esta demo.
 - La personalización se lee de los registros actuales: al borrar una entrevista se elimina
   su feedback del contexto futuro y se recalculan sus contribuciones al progreso. Actividades
   ya generadas y completadas siguen siendo prácticas independientes.
-- Noticias, eventos y bienestar son contenido editorial de ejemplo, con `is_sample: true`.
-  Los eventos ficticios no tienen fecha ni enlace de inscripción. No hay fuentes en vivo.
+- Noticias y eventos usan proveedores configurables; consulta [Actualidad](ACTUALIDAD.md).
+  Bienestar sigue siendo contenido editorial de ejemplo.
 
 ## Persistencia y estructura
 

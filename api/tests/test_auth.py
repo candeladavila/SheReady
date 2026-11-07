@@ -18,7 +18,7 @@ def test_accounts_are_isolated_and_logout_revokes(client, profile):
 
     def register(email):
         r = client.post(
-            "/auth/register", json={"email": email, "password": "a-long-test-password-123"}
+            "/auth/register", json={"email": email, "password": "a-long-test-password-123", "display_name": "Alicia"}
         )
         assert r.status_code == 201, r.text
         assert r.headers["cache-control"] == "no-store"
@@ -60,6 +60,7 @@ def test_accounts_are_isolated_and_logout_revokes(client, profile):
     assert client.get("/progress", headers=b).json()["completed_activities"] == 0
     assert client.get("/progress", headers=a).json()["completed_activities"] == 1
     assert client.get("/auth/me", headers=a).json()["email"] == "alice@example.com"
+    assert client.get("/auth/me", headers=a).json()["display_name"] == "Alicia"
     assert client.post("/auth/logout", headers=a).status_code == 204
     assert client.get("/auth/me", headers=a).status_code == 401
     assert client.get("/auth/me", headers=b).status_code == 200
@@ -84,7 +85,7 @@ def test_delete_account_requires_password_and_removes_only_owner_data(client, pr
 
     app.dependency_overrides.pop(user_scope)
     def register(email):
-        result = client.post('/auth/register', json={'email': email, 'password': 'long-password-12345'})
+        result = client.post('/auth/register', json={'email': email, 'password': 'long-password-12345', 'display_name': 'Lucía'})
         assert result.status_code == 201
         body = result.json()
         return body['user']['id'], {'Authorization': 'Bearer ' + body['access_token']}
@@ -113,3 +114,15 @@ def test_delete_account_requires_password_and_removes_only_owner_data(client, pr
         assert db.get(InterviewTurn, interview['current_turn']['id']) is None
         assert db.get(User, other) is not None
         assert db.get(Profile, other) is not None
+
+
+def test_register_name_validation_and_persistence(client):
+    app.dependency_overrides.pop(user_scope)
+    payload = {"email": "name@example.com", "password": "a-long-test-password-123", "display_name": "   "}
+    assert client.post("/auth/register", json=payload).status_code == 422
+    payload["display_name"] = "  María  "
+    response = client.post("/auth/register", json=payload)
+    assert response.status_code == 201
+    assert response.json()["user"]["display_name"] == "María"
+    login = client.post("/auth/login", json={"email": payload["email"], "password": payload["password"]})
+    assert login.json()["user"]["display_name"] == "María"

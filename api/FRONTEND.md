@@ -2,9 +2,8 @@
 
 Todas las rutas usan la misma URL base; no hay prefijo `/api` ni `/v1`.
 Fechas: `YYYY-MM-DD`. Timestamps: ISO 8601. JSON UTF-8. Los nombres de campo están en inglés.
-En la demo todas las peticiones comparten el mismo perfil; no hace falta enviar `user_id`.
-Si el servidor configura token, añade `Authorization: Bearer <token-de-demo>`.
-Las claves de Groq y Gemini nunca se incluyen en Expo ni en las peticiones del navegador.
+La nueva versión requiere una sesión individual. Consulta [AUTH.md](AUTH.md) para
+registro, login, tokens, logout y la cuenta demo. No envíes identificadores de usuaria.
 
 `GET /capabilities` devuelve `ai_provider`, `ai_configured`, `models` y `speech_transport`.
 Si `speech_transport=device` (Groq), obtiene el texto desde `GET /interviews/{id}` y lee

@@ -64,10 +64,11 @@ export type ProfileOptions = {
   strengths_and_improvement_areas_allow_custom_text: boolean;
 };
 export type SampleContent<T> = { source: 'sample'; is_sample: true; items: T[] };
-export type NewsItem = { id: string; title: string; description: string; url: string | null };
-export type EventItem = NewsItem & { starts_at: string | null; location: string };
+export type NewsItem = { id: string; title: string; description: string; url: string; publisher: string; author: string; published_at: string | null; language: string; sectors: string[]; imported_at: string | null; image_url: string | null };
+export type EventItem = { id: string; title: string; description: string; url: string; starts_at: string; city: string; location: string; address: string; organizer: string; sectors: string[]; source: string; license: string; license_url: string };
+export type ContentFeed<T> = { source: string; is_sample: false; items: T[]; status: 'ok' | 'disabled' | 'error' | 'stale' | 'curated'; message?: string; updated_at: string | null; total: number };
 export type WellbeingItem = { id: string; title: string; duration_minutes: number; steps: string[] };
-export type AuthSession = { access_token: string; token_type: string; expires_at: string; expires_in: number; user: { id: string; email: string; created_at: string } };
+export type AuthSession = { access_token: string; token_type: string; expires_at: string; expires_in: number; user: { id: string; email: string; display_name: string | null; created_at: string } };
 export type NativeAudio = { uri: string; name: string; type: string };
 // Leave room for multipart headers below Vercel's function request limit.
 const MAX_AUDIO_BYTES = 4_000_000;
@@ -171,7 +172,7 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
   return {
     auth: {
       login: (email: string, password: string) => request<AuthSession>('/auth/login', { method: 'POST', json: { email, password } }),
-      register: (email: string, password: string) => request<AuthSession>('/auth/register', { method: 'POST', json: { email, password } }),
+      register: (email: string, password: string, display_name: string) => request<AuthSession>('/auth/register', { method: 'POST', json: { email, password, display_name } }),
       me: () => request<AuthSession['user']>('/auth/me'),
       deleteAccount: (password: string) => request<void>('/auth/delete-account', { method: 'POST', json: { password }, response: 'empty' }),
       logout: (signal?: AbortSignal) => request<void>('/auth/logout', { method: 'POST', response: 'empty', signal }),
@@ -214,8 +215,8 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
     },
     wellbeingComplete: (body: { id: string; kind: 'breathing' | 'confidence'; duration_seconds: number }) => request<{ id: string }>('/wellbeing/completions', { method: 'POST', json: body }),
     progress: () => request<Progress>('/progress'),
-    news: () => request<SampleContent<NewsItem>>('/news'),
-    events: () => request<SampleContent<EventItem>>('/events'),
+    news: (sector = 'Otro sector') => request<ContentFeed<NewsItem>>(`/news?sector=${encodeURIComponent(sector)}`),
+    events: (city = 'Málaga', sector?: string) => request<ContentFeed<EventItem>>(`/events?city=${encodeURIComponent(city)}${sector ? `&sector=${encodeURIComponent(sector)}` : ''}`),
     wellbeing: () => request<SampleContent<WellbeingItem> & { description: string }>('/wellbeing/activities'),
   };
 }
