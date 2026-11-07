@@ -198,7 +198,7 @@ def save_onboarding(body: OnboardingDocument, db: DB):
     else:
         if body.sector:
             data["sector"] = body.sector
-        if body.daily_minutes:
+        if body.daily_time_choice:
             data["daily_minutes"] = body.daily_minutes
     if item:
         item.data = data

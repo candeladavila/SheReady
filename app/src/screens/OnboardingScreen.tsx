@@ -7,21 +7,21 @@ import NavigationIcon, { type NavigationIconName } from '../components/Navigatio
 import { sectorIllustration } from '../constants/sectorIllustrations';
 
 type Option = { label: string; detail?: string; icon?: string };
-const goals: Option[] = [
+export const goals: Option[] = [
   { label: 'Encontrar empleo', detail: 'Dar dirección a mi búsqueda', icon: '⌕' },
   { label: 'Mejorar mi CV', detail: 'Contar mejor lo que sé hacer', icon: '▤' },
   { label: 'Preparar entrevistas', detail: 'Practicar cómo presentarme', icon: '▱' },
   { label: 'Cambiar de sector', detail: 'Explorar un nuevo rumbo', icon: '☷' },
   { label: 'Recuperar confianza', detail: 'Reconocer mi valor profesional', icon: '☼' },
 ];
-const ages = ['Menos de 25', '25–34 años', '35–44 años', '45–54 años', '55 años o más', 'Prefiero no decirlo'];
-const times: Option[] = [
+export const ages = ['Menos de 25', '25–34 años', '35–44 años', '45–54 años', '55 años o más', 'Prefiero no decirlo'];
+export const times: Option[] = [
   { label: '5 minutos', detail: 'Una acción pequeña para empezar' },
   { label: '10 minutos', detail: 'Un ejercicio breve y un paso práctico' },
   { label: '20 minutos', detail: 'Más espacio para practicar y explorar' },
   { label: 'Iré día a día', detail: 'Prefiero decidir sobre la marcha' },
 ];
-const sectors = ['Tecnología', 'Marketing', 'Finanzas', 'Educación y salud', 'Comercio y servicios', 'Otro sector', 'Aún no lo sé'];
+export const sectors = ['Tecnología', 'Marketing', 'Finanzas', 'Educación y salud', 'Comercio y servicios', 'Otro sector', 'Aún no lo sé'];
 const purple = colors.plum;
 const sage = colors.sage;
 
