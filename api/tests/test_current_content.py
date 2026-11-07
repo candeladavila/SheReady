@@ -42,3 +42,10 @@ def test_cache_handles_provider_failure(monkeypatch):
     content._cache["old"] = (0, {"items": [{"id": "a"}], "status": "ok", "updated_at": "old"})
     assert content.cached("old", fail)["status"] == "stale"
     content._cache.clear()
+
+
+def test_curated_selection_has_three_distinct_links_per_sector():
+    for sector in content.SECTORS:
+        items = content.curated_news(sector, "manual")["items"]
+        assert len({item["url"] for item in items}) >= 3
+        assert all(sector in item["sectors"] for item in items)

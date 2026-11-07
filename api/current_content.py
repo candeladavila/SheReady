@@ -128,9 +128,30 @@ CURATED = {
 }
 
 
+EXTRA_CURATED = {
+    "digital": ("Reducir la brecha digital de mujeres y niñas", "UNESCO presenta un proyecto de formación digital para docentes y alumnas en Ghana y Tanzania.", "https://www.unesco.org/en/gender-equality/education/digital-divide", "UNESCO"),
+    "girls": ("Niñas que crean tecnología en Tanzania", "Un proyecto de UNESCO forma a docentes para fomentar competencias digitales y vocaciones STEM.", "https://www.unesco.org/en/articles/how-girls-shape-tech-their-own-terms-tanzania", "UNESCO"),
+    "finance": ("Datos para cerrar la brecha financiera", "El Banco Mundial explica cómo el código We Finance utiliza datos para mejorar el acceso de emprendedoras a financiación.", "https://www.worldbank.org/en/news/feature/2024/03/27/we-finance-code-data-driven-transformation-to-close-the-gender-finance-gap", "Banco Mundial"),
+    "business": ("El emprendimiento de las mujeres en cifras", "El Banco Mundial examina datos sobre la participación de las mujeres en el emprendimiento.", "https://blogs.worldbank.org/en/psd/what-the-numbers-reveal-about-women-s-entrepreneurship", "Banco Mundial"),
+    "support": ("Recursos para apoyar a las emprendedoras", "El Banco Mundial describe servicios de desarrollo empresarial, formación y acceso a tecnologías para emprendedoras.", "https://www.worldbank.org/en/topic/gender/publication/female-entrepreneurship-resourcepoint-module-2-how-to-make-change", "Banco Mundial"),
+    "education": ("Brechas de género en la educación", "UNESCO analiza avances y barreras que siguen afectando a la educación de las niñas.", "https://www.unesco.org/en/articles/gender-gaps-education-narrow-globally-yet-early-marriage-remains-major-barrier-girls-education-new?hub=701", "UNESCO"),
+}
+CURATED_EXTRAS = {
+    "Tecnología": ("digital", "girls"),
+    "Marketing": ("digital", "support"),
+    "Finanzas": ("finance", "business"),
+    "Educación y salud": ("education", "girls"),
+    "Comercio y servicios": ("business", "support"),
+    "Otro sector": ("finance", "education"),
+}
+
+
 def curated_news(sector, message):
-    title, description, link, publisher = CURATED[sector]
-    return {"items": [{"id": "curated-" + hashlib.sha256(link.encode()).hexdigest()[:16], "title": title, "description": description, "url": link, "publisher": publisher, "author": "", "published_at": None, "language": "en", "sectors": [sector], "imported_at": None, "image_url": None}], "status": "curated", "message": message, "updated_at": None}
+    articles = [CURATED[sector], *(EXTRA_CURATED[key] for key in CURATED_EXTRAS[sector])]
+    items = []
+    for title, description, link, publisher in articles:
+        items.append({"id": "curated-" + hashlib.sha256(link.encode()).hexdigest()[:16], "title": title, "description": description, "url": link, "publisher": publisher, "author": "", "published_at": None, "language": "en", "sectors": [sector], "imported_at": None, "image_url": None})
+    return {"items": items, "status": "curated", "message": message, "updated_at": None}
 
 
 def load_news(sector):
