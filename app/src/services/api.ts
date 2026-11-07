@@ -1,7 +1,7 @@
 /** Cliente compartido para la API de SheReady. No incluyas claves de proveedor aquí. */
 export type Skill = 'technical' | 'communication' | 'teamwork' | 'problem_solving' | 'self_presentation';
 export type Category = 'technical' | 'professional_situation' | 'soft_skills';
-export type Duration = 3 | 5 | 10 | 15;
+export type Duration = 1 | 3 | 5 | 10 | 15;
 
 type ProfileFields = {
   age: number;

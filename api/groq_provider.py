@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from ai import SYSTEM, GeminiProvider
 from config import get_settings
+from schemas import PersonalizedPlan
 
 BASE_URL = "https://api.groq.com/openai/v1"
 
@@ -100,7 +101,7 @@ class GroqProvider(GeminiProvider):
                     },
                 },
                 "temperature": 0.3,
-                "max_completion_tokens": 5000,
+                "max_completion_tokens": 16000 if schema is PersonalizedPlan else 5000,
             },
         )
         try:
