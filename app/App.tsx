@@ -5,8 +5,8 @@ import OnboardingScreen from './src/screens/OnboardingScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import AppShell from './src/navigation/AppShell';
 import { api, ApiError, AuthSession, RolePlan } from './src/services/api';
-import { endSession, restoreSession, syncPendingProfile, enterGuestSession, deleteAccount } from './src/services/session';
-import { ProfileDocument, documentFromProfile, pendingProfileDocument, saveProfileDocument } from './src/services/profileDocument';
+import { endSession, restoreSession, enterGuestSession, deleteAccount } from './src/services/session';
+import { ProfileDocument, documentFromProfile, pendingProfileDocument } from './src/services/profileDocument';
 import GettingStartedScreen from './src/features/gettingStarted/GettingStartedScreen';
 import { emptyGettingStarted, GettingStarted, loadGettingStarted, saveGettingStarted, TargetRole } from './src/features/gettingStarted/model';
 import { colors } from './src/theme/colors';
@@ -72,18 +72,23 @@ export default function App() {
     try { await refreshGettingStarted(authenticated); setLoadError(false); setLoaded(true); } catch { setLoadError(true); }
   })(); }, [retry]);
   async function finishOnboarding(document: ProfileDocument) {
-    if (!document.completed && session) { setStage('app'); return; }
-    const previous = await pendingProfileDocument();
-    if (document.completed || !previous) await saveProfileDocument(document);
-    const current = document.completed || !previous ? document : previous;
-    setSector(current.sector ?? ''); setCompletedOnboarding(current.completed);
-    if (session) { await syncPendingProfile(); setOnboardingDocument(current); setStage(document.completed && !returnToProfile ? nextAfterOnboarding(data) : 'app'); }
-    else setStage('login');
+    if (!session) { setStage('login'); return; }
+    if (!document.completed) { setStage('app'); return; }
+    const profile = await api.profile.saveOnboarding(document);
+    setOnboardingDocument(documentFromProfile(profile));
+    setSector(profile.sector ?? ''); setCompletedOnboarding(true);
+    setStage(returnToProfile ? 'app' : nextAfterOnboarding(data));
   }
   async function signedIn(value: AuthSession) {
-    await loadOnboardingDetails();
+    let profile = null;
+    try { profile = await api.profile.get(); }
+    catch (e) { if (!(e instanceof ApiError && e.status === 409)) throw e; }
+    const document = profile ? documentFromProfile(profile) : null;
+    setOnboardingDocument(document); setOnboardingLoadError(false);
+    setSector(profile?.sector ?? ''); setCompletedOnboarding(!!document?.completed);
     const next = await refreshGettingStarted(true);
-    setSession(value); setError(''); setStage(next.initialAnswers ? 'app' : 'invitation');
+    setSession(value); setError(''); setReturnToProfile(false);
+    setStage(document?.completed ? (next.initialAnswers ? 'app' : 'invitation') : 'onboarding');
   }
   async function guest(route: 'home' | 'news' = 'home') {
     try {
@@ -114,8 +119,8 @@ export default function App() {
   }
 
   if (!loaded) return <View style={styles.loading}>{loadError ? <><Text accessibilityRole="alert" style={styles.error}>No se han podido cargar tus datos. Inténtalo de nuevo.</Text><Pressable accessibilityRole="button" onPress={() => setRetry(retry + 1)} style={styles.retry}><Text style={styles.retryText}>Reintentar</Text></Pressable></> : <ActivityIndicator color={colors.plum} />}</View>;
-  if (stage === 'launch') return <LaunchScreen onFinish={() => setStage(session ? 'app' : 'onboarding')} />;
-  if (stage === 'onboarding') return <OnboardingScreen startAtForm={returnToProfile} onGuestHome={() => void guest('home')} onGuestNews={() => void guest('news')} onLogin={() => { setError(''); setStage('login'); }} guestError={error} onComplete={finishOnboarding} onSkip={finishOnboarding} />;
+  if (stage === 'launch') return <LaunchScreen onFinish={() => setStage(session ? 'app' : 'login')} />;
+  if (stage === 'onboarding') return <OnboardingScreen startAtForm={!!session || returnToProfile} onGuestHome={() => void guest('home')} onGuestNews={() => void guest('news')} onLogin={() => { setError(''); setStage('login'); }} guestError={error} onComplete={finishOnboarding} onSkip={finishOnboarding} />;
   if (stage === 'login') return <LoginScreen initialError={error} onSuccess={signedIn} onGuest={() => void guest()} />;
   if (stage !== 'app') return <GettingStartedScreen key={stage === 'invitation' || stage === 'interview' ? 'initial' : 'target'} stage={stage} selectedSector={sector} initialAnswers={data.initialAnswers} targetRole={data.targetRole} onStage={setStage} onAnswers={saveAnswers} onRole={saveRole} onLater={() => { if ((stage === 'invitation' || stage === 'interview') && !data.initialAnswers) setStage('app'); else if ((stage === 'invitation' || stage === 'interview') && !returnToProfile && !data.targetRole) setStage('roleInvitation'); else setStage('app'); }} onBack={() => setStage(stage === 'role' ? 'roleInvitation' : 'invitation')} />;
   return <AppShell accountName={session?.user.display_name} onboardingDocument={onboardingDocument} onboardingLoadError={onboardingLoadError} onReloadOnboarding={loadOnboardingDetails} onSaveOnboarding={saveOnboardingDetails} onDeleteAccount={removeAccount} rolePlans={rolePlans} onSelectPlan={selectPlan} activePlanId={data.activePlanId ?? null} initialInterviewCompleted={!!data.initialAnswers} targetRole={data.targetRole} onOpenInitialInterview={() => { setReturnToProfile(true); setStage('invitation'); }} onOpenTargetRole={() => { setReturnToProfile(true); setStage('roleInvitation'); }} key={session?.user.id ?? 'guest'} selectedSector={sector} initialRoute={returnToProfile ? 'profile' : session ? 'home' : guestRoute} completedOnboarding={completedOnboarding} accountEmail={session?.user.email} onLogin={() => { setError(''); setStage('login'); }} onLogout={() => void logout()} />;

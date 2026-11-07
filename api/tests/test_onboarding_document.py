@@ -26,6 +26,10 @@ def test_pending_document_belongs_only_to_logged_in_account(client, profile):
     a = account("document-a@example.com")
     saved = client.put("/profile/onboarding", json=document, headers=a)
     assert saved.status_code == 200, saved.text
+    assert saved.json()["goals"] == document["goals"]
+    assert saved.json()["age_range"] == document["age_range"]
+    assert saved.json()["daily_time_choice"] == document["daily_time_choice"]
+    assert saved.json()["sector"] == document["sector"]
     assert saved.json()["age"] is None  # A range must not become an invented exact age.
     assert saved.json()["target_role"] is None
     assert saved.json()["days_until_interview"] is None
@@ -53,5 +57,7 @@ def test_pending_document_belongs_only_to_logged_in_account(client, profile):
     assert result["daily_minutes"] is None
     assert result["sector"] == "Marketing"
     assert result["onboarding_document"]["age_range"] is None
+    assert result["age_range"] is None
+    assert result["daily_time_choice"] == "Iré día a día"
     assert result["target_role"] == profile["target_role"]
     assert client.get("/profile", headers=b).status_code == 409

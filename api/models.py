@@ -19,6 +19,10 @@ class Profile(Base):
     __tablename__ = "profiles"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     data: Mapped[dict] = mapped_column(JSON)
+    goals: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    age_range: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    daily_time_choice: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    sector: Mapped[str | None] = mapped_column(String(150), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
