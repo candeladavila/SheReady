@@ -9,13 +9,25 @@ from ai import get_ai
 from config import get_settings
 from main import app
 from models import Activity, Interview, InterviewTurn
-from services import today
+from services import interview_view, today
 
 
 def onboard(client, profile):
     response = client.put("/profile", json=profile)
     assert response.status_code == 200, response.text
     return response.json()
+
+
+def legacy_interview(client, duration=5):
+    # Persist a pre-existing interview to exercise backwards-compatible history and answers.
+    question = client.fake_ai.question({}, [], []).model_dump()
+    with client.db_factory() as db:
+        item = Interview(profile_id='demo', duration_minutes=duration,
+                         max_questions={3: 2, 5: 3, 10: 5}[duration], profile_snapshot={})
+        item.turns.append(InterviewTurn(position=1, question=question))
+        db.add(item)
+        db.commit()
+        return interview_view(item)
 
 
 def answer(client, interview, text="He desarrollado una aplicación con mi equipo."):
@@ -67,9 +79,7 @@ def test_daily_activity_persistence_and_retry(client, profile):
 
 def test_complete_voice_workflow_and_delete_personalization(client, profile):
     onboard(client, profile)
-    created = client.post("/interviews", json={"duration_minutes": 3})
-    assert created.status_code == 201
-    interview = created.json()
+    interview = legacy_interview(client, 3)
     iid, tid = interview["id"], interview["current_turn"]["id"]
     assert client.post(f"/interviews/{iid}/finish").status_code == 409
     audio = client.get(f"/interviews/{iid}/turns/{tid}/speech")
@@ -104,7 +114,7 @@ def test_complete_voice_workflow_and_delete_personalization(client, profile):
 
 def test_early_finish_keeps_unanswered_out_of_progress(client, profile):
     onboard(client, profile)
-    interview = client.post("/interviews", json={"duration_minutes": 10}).json()
+    interview = legacy_interview(client, 10)
     answer(client, interview)
     finished = client.post(f"/interviews/{interview['id']}/finish").json()
     assert finished["answered_questions"] == 1
@@ -113,7 +123,7 @@ def test_early_finish_keeps_unanswered_out_of_progress(client, profile):
 
 def test_provider_failure_does_not_save_or_advance(client, profile):
     onboard(client, profile)
-    interview = client.post("/interviews", json={}).json()
+    interview = legacy_interview(client)
     original = client.fake_ai.question
 
     def unavailable(*args):
@@ -136,7 +146,7 @@ def test_no_key_never_returns_fake_activity(client, profile):
 
 def test_audio_limits_and_wrong_turn(client, profile, monkeypatch):
     onboard(client, profile)
-    interview = client.post("/interviews", json={}).json()
+    interview = legacy_interview(client)
     url = f"/interviews/{interview['id']}/transcriptions"
     assert client.post(url, files={"file": ("x.txt", b"a", "text/plain")}).status_code == 415
     assert client.post(url, files={"file": ("x.wav", b"", "audio/wav")}).status_code == 422
@@ -167,7 +177,7 @@ def test_auth_content_and_openapi(client, monkeypatch):
 
 def test_optimistic_concurrency_blocks_lost_update(client, profile):
     onboard(client, profile)
-    iid = client.post("/interviews", json={}).json()["id"]
+    iid = legacy_interview(client)["id"]
     with client.db_factory() as one, client.db_factory() as two:
         first, second = one.get(Interview, iid), two.get(Interview, iid)
         first.version += 1

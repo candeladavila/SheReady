@@ -55,7 +55,7 @@ El flujo autenticado guarda la entrevista inicial y su contexto mediante `PUT /p
 
 ## Modalidad de una pregunta
 
-`POST /interviews` acepta `{"duration_minutes": 1}` como identificador de la modalidad «Una pregunta» y crea un simulacro con una sola pregunta. El valor `1` es un identificador de compatibilidad y **no implica una duración de un minuto**. Los valores existentes 3, 5, 10 y 15 mantienen sus usos anteriores.
+`POST /interviews` requiere el `plan_id` de un plan propio listo y acepta `duration_minutes` 1, 5, 10 o 15. El valor `1` identifica la modalidad «Una pregunta» y **no implica una duración de un minuto**. Las entrevistas históricas sin plan siguen disponibles para consulta y continuación, pero no se crean otras nuevas sin plan.
 
 ## Reflexión al salir de una entrevista
 

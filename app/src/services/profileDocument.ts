@@ -15,6 +15,10 @@ export async function pendingProfileDocument(): Promise<ProfileDocument | null> 
   return json ? JSON.parse(json) : null;
 }
 export const clearPendingDocument = () => AsyncStorage.removeItem(KEY);
+export async function clearLocalOnboarding() {
+  await AsyncStorage.multiRemove([KEY, '@sheready/onboarding-seen']);
+  if (Platform.OS !== 'web' && FileSystem.documentDirectory) await FileSystem.deleteAsync(`${FileSystem.documentDirectory}onboarding-profile.json`, { idempotent: true });
+}
 export const hasSavedOnboarding = async () => (await AsyncStorage.getItem('@sheready/onboarding-seen')) === 'true';
 export async function downloadProfileDocument() {
   const document = await pendingProfileDocument();

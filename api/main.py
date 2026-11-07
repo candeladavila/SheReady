@@ -129,7 +129,7 @@ def capabilities():
         "speech_transport": "device" if s.ai_provider == "groq" else "server",
         "models_verified": False,
         "content_source": "sample",
-        "interview_durations": [3, 5, 10, 15],
+        "interview_durations": [1, 5, 10, 15],
         "max_audio_bytes": s.max_audio_bytes,
         "audio_persisted": False,
         "timezone": s.app_timezone,
@@ -276,6 +276,8 @@ def generate_personalized_plan(body: PlanRequest, ai: AI):
 @router.post("/interviews", status_code=201, tags=["interviews"])
 def start_interview(body: InterviewInput, db: DB, ai: AI):
     profile = profile_or_404(db)
+    if not body.plan_id:
+        raise HTTPException(409, "Añade un puesto y selecciona su plan antes de iniciar una entrevista.")
     snapshot = ai_profile(profile)
     questions = None
     if body.plan_id:

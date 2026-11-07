@@ -173,7 +173,8 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
       login: (email: string, password: string) => request<AuthSession>('/auth/login', { method: 'POST', json: { email, password } }),
       register: (email: string, password: string) => request<AuthSession>('/auth/register', { method: 'POST', json: { email, password } }),
       me: () => request<AuthSession['user']>('/auth/me'),
-      logout: () => request<void>('/auth/logout', { method: 'POST', response: 'empty' }),
+      deleteAccount: (password: string) => request<void>('/auth/delete-account', { method: 'POST', json: { password }, response: 'empty' }),
+      logout: (signal?: AbortSignal) => request<void>('/auth/logout', { method: 'POST', response: 'empty', signal }),
     },
     capabilities: () => request<{ ai_provider: 'gemini' | 'ollama' | 'groq'; ai_configured: boolean; speech_transport?: 'device' | 'server' }>('/capabilities'),
     profile: {

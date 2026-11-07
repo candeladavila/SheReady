@@ -30,7 +30,7 @@ def test_pending_document_belongs_only_to_logged_in_account(client, profile):
     assert saved.json()["target_role"] is None
     assert saved.json()["days_until_interview"] is None
     assert saved.json()["onboarding_document"]["goals"] == document["goals"]
-    assert client.post("/interviews", json={"duration_minutes": 3}, headers=a).status_code == 201
+    assert client.post("/interviews", json={"duration_minutes": 3}, headers=a).status_code == 409
     b = account("document-b@example.com")
     assert client.get("/profile", headers=b).status_code == 409
     assert (

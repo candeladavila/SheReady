@@ -14,6 +14,9 @@
           "enableBackgroundPlayback": false
         }
       ]
-    ]
+    ],
+    "web": {
+      "favicon": "./src/assets/logo_banderin_turquesa.png"
+    }
   }
 }

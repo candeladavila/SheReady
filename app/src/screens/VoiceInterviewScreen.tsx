@@ -14,9 +14,11 @@ type InterviewRecord = { id: string; company: string; role: string; date: string
 
 
 
-export default function VoiceInterviewScreen({ selectedSector, planId, onSessionChange, onRealInterviews }: { selectedSector?: string; planId: string; onSessionChange: (active: boolean) => void; onRealInterviews: () => void }) {
+export default function VoiceInterviewScreen({ selectedSector, planId, onCreatePlan, onSessionChange, onRealInterviews }: { selectedSector?: string; planId: string | null; onCreatePlan: () => void; onSessionChange: (active: boolean) => void; onRealInterviews: () => void }) {
   const [interview, setInterview] = useState<Interview | null>(null);
   const [records, setRecords] = useState<InterviewSummary[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const [error, setError] = useState('');
   const pending = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -25,15 +27,18 @@ export default function VoiceInterviewScreen({ selectedSector, planId, onSession
   const prompts = interview?.turns.map(t => t.question.text) ?? [];
   async function run(action: () => Promise<void>) {
     if (pending.current) return; pending.current = true; setBusy(true); setError('');
-    try { await action(); } catch (e) { const message = e instanceof Error ? e.message : 'No se pudo completar la operación.'; setError(message); if (phase === 'user') Alert.alert('No se pudo enviar la respuesta', message); }
+    try { await action(); } catch (e) { const message = e instanceof Error ? e.message : 'No se pudo completar la operación.'; setError(message); if (phase === 'history') setHistoryError(message); if (phase === 'user') Alert.alert('No se pudo enviar la respuesta', message); }
     finally { pending.current = false; setBusy(false); }
   }
   async function openHistory() {
-    await run(async () => {
+    if (historyLoading) return;
+    setPhase('history'); setHistoryLoading(true); setHistoryError('');
+    try {
       const all: InterviewSummary[] = []; let total = 1;
       while (all.length < total) { const page = await api.interviews.list(100, all.length); all.push(...page.items); total = page.total; if (!page.items.length) break; }
-      setRecords(all); setPhase('history');
-    });
+      setRecords(all);
+    } catch (e) { setHistoryError(e instanceof Error ? e.message : 'No se han podido cargar tus entrevistas.'); }
+    finally { setHistoryLoading(false); }
   }
   const [phase, setPhase] = useState<Phase>('menu');
   const [round, setRound] = useState(0);
@@ -75,8 +80,8 @@ export default function VoiceInterviewScreen({ selectedSector, planId, onSession
     const timer = setTimeout(() => setShowActions(true), 1800);
     return () => { animation.stop(); clearTimeout(timer); };
   }, [phase, opacity]);
-  const start = () => { setDuration(5); setPhase('duration'); };
-  const beginInterview = () => void run(async () => { const created = await api.interviews.start(duration, planId); setInterview(created); setRound(0); setShowActions(false); setPhase('interviewer'); });
+  const start = () => { if (!planId) { onCreatePlan(); return; } setDuration(5); setPhase('duration'); };
+  const beginInterview = () => { if (!planId) { onCreatePlan(); return; } void run(async () => { const created = await api.interviews.start(duration, planId); setInterview(created); setRound(0); setShowActions(false); setPhase('interviewer'); }); };
   const finishTurn = () => {
     if (phase !== 'user' || !interview) return;
     if (!interview.current_turn && interview.ready_to_finish) { void run(async () => { setInterview(await api.interviews.finish(interview.id)); setPhase('logo'); }); return; }
@@ -98,7 +103,7 @@ export default function VoiceInterviewScreen({ selectedSector, planId, onSession
   if (phase === 'duration') return <ScrollView contentContainerStyle={styles.centered}><View style={styles.content}><Pressable onPress={() => setPhase('menu')} accessibilityRole="button" style={styles.back}><Text style={styles.backText}>←  Volver</Text></Pressable><Text style={styles.eyebrow}>PREPARA TU ENTREVISTA</Text><Text style={styles.heading}>¿Cuánto tiempo tienes?</Text><Text style={styles.copy}>{error || 'Elige la duración que prefieras para tu entrevista.'}</Text><View style={styles.durationOptions}>{([1, 5, 10, 15] as const).map(minutes => <Pressable key={minutes} accessibilityRole="radio" accessibilityState={{ checked: duration === minutes }} onPress={() => setDuration(minutes)} style={[styles.durationOption, duration === minutes && styles.durationSelected]}><Text style={styles.durationText}>{minutes === 1 ? 'Una pregunta' : `${minutes} minutos`}</Text><View style={[styles.durationRadio, duration === minutes && styles.durationRadioSelected]}>{duration === minutes && <View style={styles.durationDot} />}</View></Pressable>)}</View><Text style={styles.durationHint}>La duración es orientativa; las preguntas se adaptan a tu perfil.</Text><Button label={busy ? 'Preparando entrevista…' : `Empezar · ${duration === 1 ? 'una pregunta' : `${duration} minutos`}`} disabled={busy} onPress={beginInterview} /></View></ScrollView>;
   if (phase === 'review' && interview?.feedback && 'version' in interview.feedback) return <InterviewReportScreen report={interview.feedback} interview={interview} onBack={() => setPhase('menu')} />;
   if (phase === 'review') return <ScrollView contentContainerStyle={styles.centered}><View style={styles.content}><Text style={styles.eyebrow}>TU PRÁCTICA</Text><Text style={styles.heading}>Tu revisión</Text><Text style={styles.copy}>{interview?.feedback && !('version' in interview.feedback) ? [interview.feedback.summary, 'FORTALEZAS', ...interview.feedback.strengths, 'SUGERENCIAS', ...interview.feedback.improvements.map(i => `${i.suggestion}\nReformulación: ${i.reformulation}`), 'ACTIVIDADES', ...interview.feedback.recommended_activities.map(r => r.activity), 'TRANSCRIPCIÓN', ...interview.turns.map(t => `${t.question.text}\n${t.answer ?? 'Sin respuesta'}`)].join('\n\n') : 'Esta entrevista todavía no tiene análisis.'}</Text><Button label="Volver a entrevistas" onPress={() => setPhase('menu')} /></View></ScrollView>;
-  if (phase === 'history') return <ScrollView contentContainerStyle={styles.centered}><View style={styles.content}><Pressable onPress={() => setPhase('menu')} accessibilityRole="button" style={styles.back}><Text style={styles.backText}>←  Volver</Text></Pressable><Text style={styles.eyebrow}>TU RECORRIDO</Text><Text style={styles.heading}>Entrevistas anteriores</Text><Text style={styles.copy}>Aquí podrás consultar tus simulacros por empresa, puesto y fecha.</Text>{history.length === 0 ? <View style={styles.empty}><Text style={styles.emptyIcon}>✳</Text><Text style={styles.emptyTitle}>Aún no hay entrevistas</Text><Text style={styles.emptyCopy}>Cuando completes una entrevista, podrás encontrarla aquí para revisar cómo te fue.</Text><Pressable onPress={start} accessibilityRole="button" style={styles.emptyLink}><Text style={styles.emptyLinkText}>Empezar una entrevista  ↗</Text></Pressable></View> : history.map(item => <Pressable key={item.id} style={styles.record} accessibilityRole="button" onPress={() => void run(async () => { const saved = await api.interviews.get(item.id); setInterview(saved); setRound(saved.turns.length - 1); setPhase(saved.status === 'completed' ? 'review' : 'interviewer'); })}><Text style={styles.recordCompany}>{item.company}</Text><Text style={styles.copy}>{item.role} · {item.date}</Text></Pressable>)}</View></ScrollView>;
+  if (phase === 'history') return <ScrollView contentContainerStyle={styles.centered}><View style={styles.content}><Pressable onPress={() => setPhase('menu')} accessibilityRole="button" style={styles.back}><Text style={styles.backText}>←  Volver</Text></Pressable><Text style={styles.eyebrow}>TU RECORRIDO</Text><Text style={styles.heading}>Entrevistas anteriores</Text><Text style={styles.copy}>Aquí podrás consultar tus simulacros por empresa, puesto y fecha.</Text>{historyLoading ? <Text accessibilityLiveRegion="polite" style={styles.copy}>Cargando entrevistas…</Text> : historyError ? <View style={styles.empty}><Text accessibilityRole="alert" style={styles.emptyCopy}>{historyError}</Text><Pressable onPress={() => void openHistory()} accessibilityRole="button" style={styles.emptyLink}><Text style={styles.emptyLinkText}>Reintentar</Text></Pressable></View> : history.length === 0 ? <View style={styles.empty}><Text style={styles.emptyIcon}>✳</Text><Text style={styles.emptyTitle}>Aún no hay entrevistas</Text><Text style={styles.emptyCopy}>Cuando completes una entrevista, podrás encontrarla aquí para revisar cómo te fue.</Text><Pressable onPress={start} accessibilityRole="button" style={styles.emptyLink}><Text style={styles.emptyLinkText}>Empezar una entrevista  ↗</Text></Pressable></View> : history.map(item => <Pressable key={item.id} style={styles.record} accessibilityRole="button" onPress={() => void run(async () => { const saved = await api.interviews.get(item.id); setInterview(saved); setRound(saved.turns.length - 1); setPhase(saved.status === 'completed' ? 'review' : 'interviewer'); })}><Text style={styles.recordCompany}>{item.company}</Text><Text style={styles.copy}>{item.role} · {item.date}</Text></Pressable>)}</View></ScrollView>;
   return <ScrollView contentContainerStyle={[styles.menu, wide && styles.menuWide]}><View style={styles.menuIntro}><Text style={styles.eyebrow}>TU ESPACIO PARA PRACTICAR</Text><Text style={styles.heading}>Cada conversación{ '\n' }es un paso adelante.</Text><Text style={styles.copy}>{error || 'Prepárate a tu ritmo, ensaya tus respuestas y vuelve a tus entrevistas cuando quieras.'}</Text><View style={styles.demoTag}><Text style={styles.demoText}>PRÁCTICA DE ENTREVISTA</Text></View>{guide && <Image source={guide} style={[styles.guide, wide && styles.guideWide]} resizeMode="contain" accessible={false} />}</View><View style={styles.menuCards}><MenuCard number="01" title="Empezar una nueva entrevista" description="Practica en un espacio pensado para ti." onPress={start} primary /><MenuCard number="02" title="Analizar entrevistas anteriores" description="Revisa tus simulacros y observa tu evolución." onPress={() => void openHistory()} /><MenuCard number="03" title="Mis entrevistas reales" description="Consulta tus próximas entrevistas y el feedback de las anteriores." onPress={onRealInterviews} /></View></ScrollView>;
 }
 function Button({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) { return <Pressable accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled }} onPress={onPress} style={styles.button}><Text style={styles.buttonText}>{label}  ↗</Text></Pressable>; }

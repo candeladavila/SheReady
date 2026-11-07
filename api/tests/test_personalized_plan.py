@@ -150,7 +150,16 @@ def test_exit_reflection_and_single_question_interview(client):
         "interview_in_days": 5,
     }
     assert client.put("/profile", json=profile).status_code == 200
-    response = client.post("/interviews", json={"duration_minutes": 1})
+    from models import RolePlan, User
+
+    with client.db_factory() as db:
+        db.add(User(id='demo', email='demo@example.com', password_hash='unused'))
+        db.flush()
+        role_plan = RolePlan(user_id='demo', role_key='demo-plan', role={'title': 'Diseñadora', 'company': '', 'sector': 'Tecnología'}, status='ready', plan=plan_data())
+        db.add(role_plan)
+        db.commit()
+        plan_id = role_plan.id
+    response = client.post("/interviews", json={"duration_minutes": 1, "plan_id": plan_id})
     assert response.status_code == 201
     assert response.json()["max_questions"] == 1
     item = response.json()

@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import AuthSession, User, now
+from models import AuthSession, Profile, User, now
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 hasher = PasswordHash.recommended()
@@ -28,6 +28,11 @@ class CredentialsInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     email: EmailStr = Field(max_length=254)
     password: SecretStr = Field(min_length=12, max_length=128)
+
+
+class DeleteAccountInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    password: SecretStr = Field(min_length=1, max_length=128)
 
 
 def digest(token):
@@ -118,5 +123,32 @@ def me(user: Annotated[User, Depends(current_user)]):
 @auth_router.post("/logout", status_code=204)
 def logout(db: DB, credentials: Credentials, user: Annotated[User, Depends(current_user)]):
     db.delete(db.get(AuthSession, digest(credentials.credentials)))
+    db.commit()
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+
+@auth_router.post("/delete-account", status_code=204)
+def delete_account(body: DeleteAccountInput, db: DB, user: Annotated[User, Depends(current_user)]):
+    # Serialize password checks with login so the same lockout protects reauthentication.
+    user = db.scalar(select(User).where(User.id == user.id).with_for_update())
+    if not user:
+        raise unauthorized()
+    locked = user.locked_until and user.locked_until.replace(tzinfo=timezone.utc) > now()
+    if locked or not hasher.verify(body.password.get_secret_value(), user.password_hash):
+        if not locked:
+            user.failed_logins += 1
+            if user.failed_logins >= 5:
+                user.locked_until = now() + timedelta(minutes=5)
+                user.failed_logins = 0
+            db.commit()
+        raise HTTPException(401, "Contraseña incorrecta o acceso temporalmente bloqueado.")
+    # Profiles predate accounts and are not FK-linked to users. Delete explicitly;
+    # the database cascades profile data and the account's sessions and plans.
+    db.info['user_id'] = user.id
+    profile = db.get(Profile, user.id)
+    if profile:
+        db.delete(profile)
+        db.flush()
+    db.delete(user)
     db.commit()
     return Response(status_code=204, headers={"Cache-Control": "no-store"})

@@ -111,3 +111,50 @@ def test_failed_plan_can_be_retried(client):
     client.fake_ai.plan = lambda context, role: PersonalizedPlan.model_validate(plan_data())
     assert client.post('/role-plans', json=role, headers=headers).json()['status'] == 'ready'
     assert len(client.get('/role-plans', headers=headers).json()['items']) == 1
+
+
+def test_initial_interview_provider_failure_does_not_complete_profile(client):
+    app.dependency_overrides.pop(user_scope)
+    assert client.get('/profile/initial-interview').status_code == 401
+    result = client.post('/auth/register', json={'email': 'failure@example.com', 'password': 'password-123456'})
+    headers = {'Authorization': 'Bearer ' + result.json()['access_token']}
+    def unavailable(answers, onboarding):
+        raise HTTPException(503, 'IA no disponible')
+    client.fake_ai.initial_profile = unavailable
+    response = client.put('/profile/initial-interview', json={'answers': ['Una respuesta'] * 5}, headers=headers)
+    assert response.status_code == 503
+    assert client.get('/profile/initial-interview', headers=headers).json()['completed'] is False
+    assert client.get('/profile', headers=headers).status_code == 409
+
+
+def test_concurrent_plan_generation_calls_provider_once(client):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    app.dependency_overrides.pop(user_scope)
+    result = client.post('/auth/register', json={'email': 'race@example.com', 'password': 'password-123456'})
+    headers = {'Authorization': 'Bearer ' + result.json()['access_token']}
+    client.fake_ai.initial_profile = lambda answers, onboarding: InitialProfileContext(
+        strengths=['Escucha'], improvement_areas=['Ejemplos'], preferences=[])
+    assert client.put('/profile/initial-interview', json={'answers': ['Una respuesta'] * 5}, headers=headers).status_code == 200
+    started, release = Event(), Event()
+    calls = []
+    def slow_plan(context, role):
+        calls.append(1)
+        started.set()
+        if not release.wait(5):
+            raise RuntimeError('La prueba agotó el tiempo')
+        return PersonalizedPlan.model_validate(plan_data())
+    client.fake_ai.plan = slow_plan
+    role = {'title': 'Diseñadora', 'sector': 'Tecnología', 'offer_description': 'Diseño de producto'}
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(client.post, '/role-plans', json=role, headers=headers)
+        try:
+            assert started.wait(5)
+            second = client.post('/role-plans', json=role, headers=headers)
+            assert second.status_code == 409
+        finally:
+            release.set()
+        assert first.result(timeout=5).status_code == 200
+    assert len(calls) == 1
+    assert len(client.get('/role-plans', headers=headers).json()['items']) == 1

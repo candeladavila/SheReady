@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import LaunchScreen from './src/screens/LaunchScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import AppShell from './src/navigation/AppShell';
 import { api, AuthSession, RolePlan } from './src/services/api';
-import { endSession, restoreSession, syncPendingProfile, enterGuestSession } from './src/services/session';
+import { endSession, restoreSession, syncPendingProfile, enterGuestSession, deleteAccount } from './src/services/session';
 import { ProfileDocument, pendingProfileDocument, saveProfileDocument } from './src/services/profileDocument';
 import GettingStartedScreen from './src/features/gettingStarted/GettingStartedScreen';
 import { emptyGettingStarted, GettingStarted, loadGettingStarted, saveGettingStarted, TargetRole } from './src/features/gettingStarted/model';
@@ -14,6 +14,7 @@ import { colors } from './src/theme/colors';
 type Stage = 'launch' | 'onboarding' | 'login' | 'invitation' | 'interview' | 'roleInvitation' | 'role' | 'app';
 export default function App() {
   const [stage, setStage] = useState<Stage>('launch');
+  const logoutPending = useRef(false);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [completedOnboarding, setCompletedOnboarding] = useState(false);
   const [returnToProfile, setReturnToProfile] = useState(false);
@@ -81,14 +82,23 @@ export default function App() {
     } catch { setError('No se pudo preparar el acceso como invitada. Inténtalo de nuevo.'); }
   }
   async function logout() {
-    try { await endSession(); setSession(null); setReturnToProfile(false); setStage('login'); }
-    catch { setError('No se pudo cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.'); setStage('login'); }
+    if (logoutPending.current) return;
+    logoutPending.current = true;
+    try { const revoked = await endSession(); setSession(null); setData(emptyGettingStarted); setRolePlans([]); setReturnToProfile(false); setError(revoked ? '' : 'Has cerrado sesión en este dispositivo, pero no se ha podido confirmar el cierre en el servidor.'); setStage('login'); }
+    catch { setError('No se ha podido cerrar la sesión en este dispositivo.'); setStage('login'); }
+    finally { logoutPending.current = false; }
+  }
+  async function removeAccount(password: string) {
+    const cleared = await deleteAccount(password);
+    setSession(null); setData(emptyGettingStarted); setRolePlans([]); setReturnToProfile(false);
+    setError(cleared ? 'Tu cuenta se ha eliminado.' : 'Tu cuenta se ha eliminado, pero no se han podido borrar todos los datos de este dispositivo.');
+    setStage('login');
   }
   if (!loaded) return <View style={styles.loading}>{loadError ? <><Text accessibilityRole="alert" style={styles.error}>No se han podido cargar tus datos. Inténtalo de nuevo.</Text><Pressable accessibilityRole="button" onPress={() => setRetry(retry + 1)} style={styles.retry}><Text style={styles.retryText}>Reintentar</Text></Pressable></> : <ActivityIndicator color={colors.plum} />}</View>;
   if (stage === 'launch') return <LaunchScreen onFinish={() => setStage(session ? 'app' : 'onboarding')} />;
   if (stage === 'onboarding') return <OnboardingScreen startAtForm={returnToProfile} onComplete={finishOnboarding} onSkip={finishOnboarding} />;
   if (stage === 'login') return <LoginScreen initialError={error} onSuccess={signedIn} onGuest={() => void guest()} />;
   if (stage !== 'app') return <GettingStartedScreen key={stage === 'invitation' || stage === 'interview' ? 'initial' : 'target'} stage={stage} selectedSector={sector} initialAnswers={data.initialAnswers} targetRole={data.targetRole} onStage={setStage} onAnswers={saveAnswers} onRole={saveRole} onLater={() => { if ((stage === 'invitation' || stage === 'interview') && !data.initialAnswers) setStage('app'); else if ((stage === 'invitation' || stage === 'interview') && !returnToProfile && !data.targetRole) setStage('roleInvitation'); else setStage('app'); }} onBack={() => setStage(stage === 'role' ? 'roleInvitation' : 'invitation')} />;
-  return <AppShell rolePlans={rolePlans} onSelectPlan={selectPlan} activePlanId={data.activePlanId ?? null} initialInterviewCompleted={!!data.initialAnswers} targetRole={data.targetRole} onOpenInitialInterview={() => { setReturnToProfile(true); setStage('invitation'); }} onOpenTargetRole={() => { setReturnToProfile(true); setStage('roleInvitation'); }} key={session?.user.id ?? 'guest'} selectedSector={sector} initialRoute={returnToProfile ? 'profile' : 'home'} completedOnboarding={completedOnboarding} accountEmail={session?.user.email} onLogin={() => { setError(''); setStage('login'); }} onLogout={() => void logout()} />;
+  return <AppShell onDeleteAccount={removeAccount} rolePlans={rolePlans} onSelectPlan={selectPlan} activePlanId={data.activePlanId ?? null} initialInterviewCompleted={!!data.initialAnswers} targetRole={data.targetRole} onOpenInitialInterview={() => { setReturnToProfile(true); setStage('invitation'); }} onOpenTargetRole={() => { setReturnToProfile(true); setStage('roleInvitation'); }} key={session?.user.id ?? 'guest'} selectedSector={sector} initialRoute={returnToProfile ? 'profile' : 'home'} completedOnboarding={completedOnboarding} accountEmail={session?.user.email} onLogin={() => { setError(''); setStage('login'); }} onLogout={() => void logout()} />;
 }
 const styles = StyleSheet.create({ loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.ivory, padding: 24 }, error: { color: colors.eggplant, textAlign: 'center', fontSize: 15 }, retry: { marginTop: 20, backgroundColor: colors.plum, padding: 16, borderRadius: 12 }, retryText: { color: colors.white, fontWeight: '700' } });
