@@ -3,6 +3,7 @@ import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWind
 import { StatusBar } from 'expo-status-bar';
 import { ProfileDocument } from '../services/profileDocument';
 import { colors } from '../theme/colors';
+import NavigationIcon, { type NavigationIconName } from '../components/NavigationIcon';
 import { sectorIllustration } from '../constants/sectorIllustrations';
 
 type Option = { label: string; detail?: string; icon?: string };
@@ -56,9 +57,9 @@ export default function OnboardingScreen({ onComplete, onSkip, onGuestHome, onGu
           <View style={styles.introHeader}><Text style={styles.brand}>SheReady</Text></View>
           <View style={styles.welcomeIntro}><Text style={styles.eyebrow}>TU ESPACIO, TU CAMINO</Text><Text style={styles.introTitle}>Un paso a tu ritmo.</Text><Text style={styles.description}>Empieza por donde quieras.</Text></View>
           <View style={styles.entryOptions}>
-            <Entry label="Inicio" detail="Entra como invitada" icon="⌂" onPress={onGuestHome} />
-            <Entry label="Noticias para ti" detail="Explora la actualidad y los eventos" icon="▤" onPress={onGuestNews} />
-            <Entry label="Mi perfil" detail="Inicia sesión para acceder" icon="♙" onPress={onLogin} />
+            <Entry label="Inicio" detail="Entra como invitada" icon="home" onPress={onGuestHome} />
+            <Entry label="Noticias para ti" detail="Explora la actualidad y los eventos" icon="news" onPress={onGuestNews} />
+            <Entry label="Mi perfil" detail="Inicia sesión para acceder" icon="profile" onPress={onLogin} />
           </View>
           {!!guestError && <Text accessibilityRole="alert" style={styles.entryError}>{guestError}</Text>}
           <View style={styles.introFooter}><Action label="Crear mi plan" onPress={goNext} /><Text style={styles.helper}>5 pasos breves. Tú decides qué compartir.</Text></View>
@@ -81,8 +82,8 @@ export default function OnboardingScreen({ onComplete, onSkip, onGuestHome, onGu
   );
 }
 
-function Entry({ label, detail, icon, onPress }: { label: string; detail: string; icon: string; onPress: () => void }) {
-  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.entry, pressed && styles.pressed]}><Text style={styles.entryIcon}>{icon}</Text><View style={styles.choiceText}><Text style={styles.entryTitle}>{label}</Text><Text style={styles.choiceDetail}>{detail}</Text></View><Text style={styles.entryArrow}>→</Text></Pressable>;
+function Entry({ label, detail, icon, onPress }: { label: string; detail: string; icon: NavigationIconName; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.entry, pressed && styles.pressed]}><View style={styles.entryIcon}><NavigationIcon name={icon} active /></View><View style={styles.choiceText}><Text style={styles.entryTitle}>{label}</Text><Text style={styles.choiceDetail}>{detail}</Text></View><Text style={styles.entryArrow}>→</Text></Pressable>;
 }
 
 function SectorChoice({ label, half, selected, onPress }: { label: string; half: boolean; selected: boolean; onPress: () => void }) {
@@ -95,7 +96,7 @@ function Choice({ option, selected, multiple = false, onPress }: { option: Optio
 
 const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' });
 const styles = StyleSheet.create({
-  welcomeIntro: { marginTop: 26, marginBottom: 34 }, entryOptions: { gap: 10 }, entry: { minHeight: 74, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 }, entryIcon: { width: 44, color: colors.plum, fontSize: 26 }, entryTitle: { color: colors.eggplant, fontSize: 16, fontWeight: '600' }, entryArrow: { color: colors.plum, fontSize: 23 }, entryError: { color: colors.eggplant, marginTop: 12 },
+  welcomeIntro: { marginTop: 26, marginBottom: 34 }, entryOptions: { gap: 10 }, entry: { minHeight: 74, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 }, entryIcon: { width: 44, alignItems: 'flex-start' }, entryTitle: { color: colors.eggplant, fontSize: 16, fontWeight: '600' }, entryArrow: { color: colors.plum, fontSize: 23 }, entryError: { color: colors.eggplant, marginTop: 12 },
   sectorHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }, sectorHeaderText: { flex: 1, minWidth: 0 }, sectorHeaderImage: { width: 105, height: 145 }, sectorHeaderImageWeb: { width: 240, height: 240 },
   root: { flex: 1, backgroundColor: colors.ivory, paddingTop: Platform.OS === 'web' ? 24 : 55 },
   skip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }, skipText: { color: colors.plum, fontSize: 14, fontWeight: '600' }, headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
