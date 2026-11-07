@@ -6,15 +6,17 @@ de la cuenta se obtiene de la sesión; el cliente nunca envía `user_id` ni `pro
 
 ## Endpoints
 
-`POST /auth/register` (201) y `POST /auth/login` (200) reciben JSON:
+`POST /auth/register` (201) recibe nombre, correo y contraseña:
 
 ```json
-{"email":"usuaria@example.com","password":"una-contraseña-de-al-menos-12-caracteres"}
+{"display_name":"María","email":"usuaria@example.com","password":"una-contraseña-de-al-menos-12-caracteres"}
 ```
+
+`POST /auth/login` recibe únicamente correo y contraseña. El nombre es obligatorio al registrarse (1 a 80 caracteres).
 
 Correo válido, contraseña de 12 a 128 caracteres. El correo se normaliza a minúsculas.
 La respuesta incluye `access_token`, `token_type=bearer`, `expires_in=604800`,
-`expires_at` y `user: {id,email,created_at}`. Registrar no crea un perfil vacío:
+`expires_at` y `user: {id,email,display_name,created_at}`. Registrar no crea un perfil vacío:
 hay que completar el onboarding mediante `PUT /profile`.
 
 Todas las rutas de producto (incluyendo `/capabilities`, opciones, historial, audio y

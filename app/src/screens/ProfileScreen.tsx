@@ -24,7 +24,7 @@ function countdown(date: Date, now: number) {
 }
 function dateLabel(date: Date) { return new Intl.DateTimeFormat('es-ES', { dateStyle: 'long', timeStyle: 'short' }).format(date); }
 
-export default function ProfileScreen({ selectedSector, completedOnboarding, initialInterviewCompleted, targetRole, onOpenInitialInterview, onOpenTargetRole, onOpenOnboarding, onMeditation }: { selectedSector?: string; completedOnboarding: boolean; initialInterviewCompleted: boolean; targetRole: TargetRole | null; onOpenInitialInterview: () => void; onOpenTargetRole: () => void; onOpenOnboarding: () => void; onMeditation: () => void }) {
+export default function ProfileScreen({ name, selectedSector, completedOnboarding, initialInterviewCompleted, targetRole, onOpenInitialInterview, onOpenTargetRole, onOpenOnboarding, onMeditation }: { name?: string | null; selectedSector?: string; completedOnboarding: boolean; initialInterviewCompleted: boolean; targetRole: TargetRole | null; onOpenInitialInterview: () => void; onOpenTargetRole: () => void; onOpenOnboarding: () => void; onMeditation: () => void }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [view, setView] = useState<ViewName>('interviews');
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -76,7 +76,7 @@ export default function ProfileScreen({ selectedSector, completedOnboarding, ini
     {view === 'interviews' && <>
       <View style={[styles.profileHeader, compact && styles.profileHeaderCompact]}>
         <View style={[styles.avatar, compact && styles.avatarCompact]}><Text style={[styles.avatarText, compact && styles.avatarTextCompact]}>L</Text></View>
-        <View style={styles.identity}><Text style={styles.eyebrow}>TU PERFIL</Text><Text style={[styles.title, compact && styles.titleCompact]}>Hola, Lucía.</Text><Text style={styles.profileMeta}>Perfil de ejemplo{selectedSector ? ` · ${selectedSector}` : ''}</Text></View>
+        <View style={styles.identity}><Text style={styles.eyebrow}>TU PERFIL</Text><Text style={[styles.title, compact && styles.titleCompact]}>{name ? `Hola, ${name}.` : "Hola."}</Text><Text style={styles.profileMeta}>Tu perfil{selectedSector ? ` · ${selectedSector}` : ''}</Text></View>
         {illustration && <Image source={illustration} style={[styles.headerImage, compact && styles.headerImageCompact, wide && styles.headerImageWide]} resizeMode="contain" accessible={false} />}
         <Pressable accessibilityRole="button" accessibilityLabel="Ajustes" accessibilityState={{ expanded: settingsOpen }} onPress={() => setSettingsOpen(!settingsOpen)} style={styles.settingsButton}><Text style={styles.settingsIcon}>⚙</Text></Pressable>
         {settingsOpen && <View style={styles.settingsCard}><Text style={styles.eyebrow}>AJUSTES</Text>{['Recordatorios', 'Descargar mis datos', 'Cerrar sesión', 'Eliminar mi cuenta'].map(label => <View key={label} style={styles.settingsItem} accessibilityLabel={`${label}, próximamente`}><Text style={styles.settingsText}>{label}</Text><Text style={styles.small}>Próximamente</Text></View>)}</View>}
