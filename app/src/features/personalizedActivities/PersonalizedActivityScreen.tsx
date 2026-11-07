@@ -1,5 +1,6 @@
+import TextInput from '../../components/DictationInput';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import storage from '../../services/accountStorage';
 import { api, type PlannedActivity } from '../../services/api';
 import { colors } from '../../theme/colors';

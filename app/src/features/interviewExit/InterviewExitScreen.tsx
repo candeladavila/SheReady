@@ -1,6 +1,7 @@
+import TextInput from '../../components/DictationInput';
 import { useState } from 'react';
 import AsyncStorage from '../../services/accountStorage';
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { colors } from '../../theme/colors';
 
 const faces = [

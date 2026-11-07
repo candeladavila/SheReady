@@ -65,6 +65,7 @@ async def prevent_private_response_caching(request, call_next):
     return response
 
 router = APIRouter(dependencies=[Depends(user_scope)])
+public_content_router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
 AI = Annotated[object, Depends(get_ai)]
 
@@ -410,6 +411,32 @@ MIME_NORMALIZATION = {
 }
 
 
+def get_dictation_provider():
+    if get_settings().groq_api_key.get_secret_value():
+        from groq_provider import GroqProvider
+
+        return GroqProvider()
+    from ollama_provider import OllamaProvider
+
+    return OllamaProvider()
+
+
+@router.post("/dictation/transcriptions", tags=["voice"])
+def transcribe_dictation(file: Annotated[UploadFile, File()], ai: Annotated[object, Depends(get_dictation_provider)]):
+    try:
+        mime = (file.content_type or "").split(";", 1)[0].strip().lower()
+        if mime not in ALLOWED_AUDIO:
+            raise HTTPException(415, "Formato de audio no admitido.")
+        data = file.file.read(get_settings().max_audio_bytes + 1)
+        if not data:
+            raise HTTPException(422, "El audio está vacío.")
+        if len(data) > get_settings().max_audio_bytes:
+            raise HTTPException(413, "El audio supera el tamaño permitido.")
+        return {"transcript": ai.transcribe(data, MIME_NORMALIZATION.get(mime, mime)), "saved": False, "source": "ai", "next_step": "Revisa el texto antes de continuar."}
+    finally:
+        file.file.close()
+
+
 @router.post("/interviews/{interview_id}/transcriptions", tags=["voice"])
 def transcribe_answer(interview_id: str, db: DB, ai: AI, file: Annotated[UploadFile, File()]):
     try:
@@ -532,7 +559,7 @@ def progress(db: DB):
     }
 
 
-@router.get("/news", tags=["content"])
+@public_content_router.get("/news", tags=["content"])
 def news(sector: str = "Otro sector", limit: int = Query(10, ge=1, le=50), offset: int = Query(0, ge=0)):
     if sector not in SECTORS:
         raise HTTPException(422, "Sector no disponible.")
@@ -540,7 +567,7 @@ def news(sector: str = "Otro sector", limit: int = Query(10, ge=1, le=50), offse
     return {**result, "total": len(result["items"]), "items": result["items"][offset:offset + limit], "source": "GNews", "is_sample": False}
 
 
-@router.get("/events", tags=["content"])
+@public_content_router.get("/events", tags=["content"])
 def events(city: str = "Málaga", sector: str | None = None, limit: int = Query(20, ge=1, le=50), offset: int = Query(0, ge=0)):
     if city not in ("Madrid", "Málaga") or (sector and sector not in SECTORS):
         raise HTTPException(422, "Ciudad o sector no disponible.")
@@ -587,6 +614,7 @@ def complete_wellbeing(body: WellbeingInput, db: DB):
     return {"id": item.id, "kind": item.kind, "created_at": item.created_at}
 
 
+app.include_router(public_content_router)
 app.include_router(auth_router)
 app.include_router(personalized_router)
 app.include_router(router)
