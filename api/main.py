@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, Res
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
@@ -16,7 +16,7 @@ from config import get_settings
 from content import CONTENT, SKILLS
 from database import get_db
 from middleware import BodyLimitMiddleware
-from models import Activity, Interview, InterviewTurn, Profile, WellbeingCompletion, now
+from models import Activity, Interview, InterviewTurn, Profile, RolePlan, WellbeingCompletion, now
 from personalized import router as personalized_router
 from schemas import (
     AnswerInput,
@@ -277,14 +277,28 @@ def generate_personalized_plan(body: PlanRequest, ai: AI):
 def start_interview(body: InterviewInput, db: DB, ai: AI):
     profile = profile_or_404(db)
     snapshot = ai_profile(profile)
-    question = ai.question(snapshot, [], personalization(db))
+    questions = None
+    if body.plan_id:
+        plan = db.scalar(select(RolePlan).where(RolePlan.id == body.plan_id, RolePlan.user_id == db.info["user_id"], RolePlan.status == "ready"))
+        if not plan or not plan.plan:
+            raise HTTPException(404, "No se encontró el plan de este puesto.")
+        mapping = {1: ("single_question", "cycle_one"), 5: ("five_minutes", "cycle_five"), 10: ("ten_minutes", "cycle_ten"), 15: ("fifteen_minutes", "cycle_fifteen")}
+        if body.duration_minutes not in mapping:
+            raise HTTPException(422, "Duración no disponible para este plan.")
+        name, counter = mapping[body.duration_minutes]
+        column = getattr(RolePlan, counter)
+        position = db.execute(update(RolePlan).where(RolePlan.id == plan.id, RolePlan.user_id == db.info["user_id"]).values({counter: column + 1}).returning(column)).scalar_one()
+        questions = plan.plan[name][(position - 1) % 3]["questions"]
+        snapshot = {**snapshot, "target_role": plan.role["title"], "company": plan.role["company"], "sector": plan.role["sector"]}
+    question = questions[0] if questions else ai.question(snapshot, [], personalization(db)).model_dump()
     interview = Interview(
         profile_id=profile.id,
         duration_minutes=body.duration_minutes,
-        max_questions={1: 1, 3: 2, 5: 3, 10: 5, 15: 7}[body.duration_minutes],
+        max_questions=len(questions) if questions else {1: 1, 3: 2, 5: 3, 10: 5, 15: 7}[body.duration_minutes],
         profile_snapshot=snapshot,
+        planned_questions=questions,
     )
-    interview.turns.append(InterviewTurn(position=1, question=question.model_dump()))
+    interview.turns.append(InterviewTurn(position=1, question=question))
     db.add(interview)
     db.commit()
     return interview_view(interview)
@@ -301,6 +315,8 @@ def list_interviews(db: DB, limit: int = Query(20, ge=1, le=100), offset: int = 
                 "id": i.id,
                 "status": i.status,
                 "duration_minutes": i.duration_minutes,
+                "company": i.profile_snapshot.get("company") or "",
+                "role": i.profile_snapshot.get("target_role") or "",
                 "created_at": i.created_at,
                 "finished_at": i.finished_at,
                 "summary": i.feedback["summary"] if i.feedback else None,
@@ -330,12 +346,9 @@ def answer_interview(interview_id: str, body: TurnAnswerInput, db: DB, ai: AI):
         raise HTTPException(409, "La entrevista ya está terminada.")
     turn.answer, turn.answered_at = body.answer, now()
     if len(item.turns) < item.max_questions:
-        question = ai.question(
-            item.profile_snapshot, [turn_view(t) for t in item.turns], personalization(db)
-        )
-        item.turns.append(
-            InterviewTurn(position=len(item.turns) + 1, question=question.model_dump())
-        )
+        question = (item.planned_questions[len(item.turns)] if item.planned_questions else
+            ai.question(item.profile_snapshot, [turn_view(t) for t in item.turns], personalization(db)).model_dump())
+        item.turns.append(InterviewTurn(position=len(item.turns) + 1, question=question))
     # Parent version protects answers/finish/delete from concurrent writes.
     item.version += 1
     db.commit()
@@ -350,7 +363,14 @@ def finish_interview(interview_id: str, db: DB, ai: AI):
     turns = [turn_view(t) for t in item.turns if t.answer is not None]
     if not turns:
         raise HTTPException(409, "Responde al menos una pregunta antes de terminar.")
-    item.feedback = ai.feedback(item.profile_snapshot, turns).model_dump()
+    if item.planned_questions:
+        report = ai.interview_report(item.profile_snapshot, turns)
+        answers = {turn['id']: turn['answer'] for turn in turns}
+        if any(part.turn_id not in answers or part.original_excerpt not in answers[part.turn_id] for part in report.improvements):
+            raise HTTPException(502, "El análisis no coincide con las respuestas. Puedes reintentarlo.")
+        item.feedback = report.model_dump()
+    else:
+        item.feedback = ai.feedback(item.profile_snapshot, turns).model_dump()
     item.status, item.finished_at = "completed", now()
     db.commit()
     return interview_view(item)

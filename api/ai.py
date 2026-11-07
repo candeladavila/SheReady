@@ -13,7 +13,14 @@ from google.genai import errors, types
 from pydantic import ValidationError
 
 from config import get_settings
-from schemas import Feedback, GeneratedActivity, InitialProfileContext, PersonalizedPlan, Question
+from schemas import (
+    Feedback,
+    GeneratedActivity,
+    InitialProfileContext,
+    InterviewReport,
+    PersonalizedPlan,
+    Question,
+)
 
 BANK = json.loads((Path(__file__).parent / "data/question_bank.json").read_text(encoding="utf-8"))
 SYSTEM = """Eres la entrevistadora de práctica de SheReady. Habla siempre en español con tono
@@ -120,6 +127,21 @@ class GeminiProvider:
             "Genera UNA pregunta de entrevista. La primera invita a presentarse. Las siguientes "
             "pueden profundizar en respuestas previas, evitando repetirlas. No incluyas feedback todavía.",
             {"profile": profile, "turns": turns, "history": memory, "question_bank": BANK},
+        )
+
+    def interview_report(self, profile, turns):
+        return self.structured(
+            InterviewReport,
+            "Crea un informe educativo de entrevista basado solo en las respuestas transcritas. "
+            "Incluye resumen, lo que funcionó, aspecto a practicar, foco, observaciones con evidencia, "
+            "fortalezas, una guía práctica y mejoras de respuestas usando STAR si es apropiado. "
+            "Copia original_excerpt literalmente de la respuesta del turno indicado por turn_id. "
+            "Cada reformulación debe usar exclusivamente hechos aportados por la usuaria; "
+            "si faltan datos usa marcadores como [tu resultado] y no inventes cifras, empleos o proyectos. "
+            "No infieras personalidad, actitudes, emociones ni tono a partir de la transcripción. "
+            "Los niveles son indicaciones para practicar, no notas ni evaluaciones profesionales. "
+            "Establece version como interview-report-v1.",
+            {'profile': profile, 'turns': turns},
         )
 
     def feedback(self, profile, turns):

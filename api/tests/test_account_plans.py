@@ -4,7 +4,7 @@ from test_personalized_plan import plan_data
 from auth import user_scope
 from main import app
 from models import RolePlan
-from schemas import InitialProfileContext, PersonalizedPlan
+from schemas import InitialProfileContext, InterviewReport, PersonalizedPlan
 
 
 def test_initial_context_and_plans_are_private_and_reused(client):
@@ -41,6 +41,48 @@ def test_initial_context_and_plans_are_private_and_reused(client):
     assert calls[0][0]['initial_answers'] == answers
     assert client.get('/role-plans', headers=b).json()['items'] == []
     assert len(client.get('/role-plans', headers=a).json()['items']) == 2
+    seen = []
+    for _ in range(4):
+        interview = client.post('/interviews', json={'duration_minutes': 1, 'plan_id': first.json()['id']}, headers=a)
+        assert interview.status_code == 201, interview.text
+        seen.append(interview.json()['current_turn']['question']['text'])
+    assert len(set(seen[:3])) == 3
+    assert seen[0] == seen[3]
+    assert client.post('/interviews', json={'duration_minutes': 1, 'plan_id': first.json()['id']}, headers=b).status_code == 409
+    assert client.put('/profile/initial-interview', json={'answers': answers}, headers=b).status_code == 200
+    assert client.post('/interviews', json={'duration_minutes': 1, 'plan_id': first.json()['id']}, headers=b).status_code == 404
+    practice = client.post('/interviews', json={'duration_minutes': 5, 'plan_id': first.json()['id']}, headers=a).json()
+    assert practice['current_turn']['question']['text'] == plan_data()['five_minutes'][0]['questions'][0]['text']
+    next_turn = client.post(f"/interviews/{practice['id']}/answers", json={'turn_id': practice['current_turn']['id'], 'answer': 'Una respuesta concreta'}, headers=a)
+    assert next_turn.json()['current_turn']['question']['text'] == plan_data()['five_minutes'][0]['questions'][1]['text']
+    report = {
+        'version': 'interview-report-v1', 'headline': 'Una práctica para seguir creciendo',
+        'summary': 'Sigue practicando con ejemplos.', 'worked': 'Has compartido una respuesta.',
+        'improvement': 'Puedes añadir más detalles.', 'focus': 'Explica una acción concreta.',
+        'skills': [{'label': 'Ejemplos', 'level': 'a_reforzar', 'evidence': 'La respuesta fue breve.'}],
+        'strengths': [{'title': 'Participación', 'evidence': 'Has respondido la pregunta.'}],
+        'focus_title': 'Estructura tu respuesta', 'focus_explanation': 'Usa un ejemplo concreto.',
+        'focus_advice': 'Habla de tu aportación.', 'checklist': ['Explica qué hiciste.'],
+        'improvements': [{'turn_id': practice['current_turn']['id'], 'title': 'Añade un ejemplo',
+            'observation': 'Puedes concretar.', 'original_excerpt': 'texto inventado',
+            'framework': 'STAR', 'parts': [{'label': 'Acción', 'text': '[Describe tu acción]'}],
+            'why': ['Más concreto']}],
+    }
+    client.fake_ai.interview_report = lambda profile, turns: InterviewReport.model_validate(report)
+    assert client.post(f"/interviews/{practice['id']}/finish", headers=a).status_code == 502
+    report['improvements'][0]['original_excerpt'] = 'Una respuesta concreta'
+    finished = client.post(f"/interviews/{practice['id']}/finish", headers=a)
+    assert finished.status_code == 200
+    assert finished.json()['feedback']['version'] == 'interview-report-v1'
+    for duration, field in [(10, 'ten_minutes'), (15, 'fifteen_minutes')]:
+        questions = []
+        for _ in range(4):
+            generated = client.post('/interviews', json={'duration_minutes': duration, 'plan_id': first.json()['id']}, headers=a)
+            assert generated.status_code == 201
+            questions.append(generated.json()['current_turn']['question']['text'])
+        assert questions[0] == plan_data()[field][0]['questions'][0]['text']
+        assert len(set(questions[:3])) == 3
+        assert questions[3] == questions[0]
 
 
 def test_failed_plan_can_be_retried(client):
