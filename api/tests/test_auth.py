@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from auth import digest, user_scope
 from main import app
-from models import AuthSession, now
+from models import AuthSession, Interview, InterviewTurn, now
+from services import interview_view
 
 
 def test_accounts_are_isolated_and_logout_revokes(client, profile):
@@ -24,8 +25,15 @@ def test_accounts_are_isolated_and_logout_revokes(client, profile):
         return {"Authorization": "Bearer " + r.json()["access_token"]}
 
     a = register("alice@example.com")
-    assert client.put("/profile", json=profile, headers=a).status_code == 200
-    interview = client.post("/interviews", json={"duration_minutes": 3}, headers=a).json()
+    saved_profile = client.put("/profile", json=profile, headers=a)
+    assert saved_profile.status_code == 200
+    assert client.post("/interviews", json={"duration_minutes": 3}, headers=a).status_code == 409
+    with client.db_factory() as db:
+        item = Interview(profile_id=saved_profile.json()['id'], duration_minutes=3, max_questions=2, profile_snapshot={})
+        item.turns.append(InterviewTurn(position=1, question=client.fake_ai.question({}, [], []).model_dump()))
+        db.add(item)
+        db.commit()
+        interview = interview_view(item)
     activity = client.post("/activities/daily", headers=a).json()
     assert (
         client.post(
@@ -67,6 +75,45 @@ def test_accounts_are_isolated_and_logout_revokes(client, profile):
         session.expires_at = now() - timedelta(seconds=1)
         db.commit()
     assert client.get("/profile", headers={"Authorization": "Bearer " + token}).status_code == 401
+
+
+def test_delete_account_requires_password_and_removes_only_owner_data(client, profile):
+    from test_personalized_plan import plan_data
+
+    from models import InitialProfile, Interview, InterviewTurn, Profile, RolePlan, User
+    from schemas import InitialProfileContext, PersonalizedPlan
+
+    app.dependency_overrides.pop(user_scope)
+    def register(email):
+        result = client.post('/auth/register', json={'email': email, 'password': 'long-password-12345', 'display_name': 'Lucía'})
+        assert result.status_code == 201
+        body = result.json()
+        return body['user']['id'], {'Authorization': 'Bearer ' + body['access_token']}
+    owner, owner_headers = register('delete-owner@example.com')
+    other, other_headers = register('delete-other@example.com')
+    assert client.put('/profile', json=profile, headers=owner_headers).status_code == 200
+    assert client.put('/profile', json=profile, headers=other_headers).status_code == 200
+    client.fake_ai.initial_profile = lambda answers, onboarding: InitialProfileContext(
+        strengths=['Escucha'], improvement_areas=['Ejemplos'], preferences=[])
+    client.fake_ai.plan = lambda context, role: PersonalizedPlan.model_validate(plan_data())
+    assert client.put('/profile/initial-interview', json={'answers': ['Una respuesta'] * 5}, headers=owner_headers).status_code == 200
+    role = {'title': 'Diseñadora', 'sector': 'Tecnología', 'offer_description': 'Diseño de producto'}
+    plan = client.post('/role-plans', json=role, headers=owner_headers).json()
+    interview = client.post('/interviews', json={'duration_minutes': 1, 'plan_id': plan['id']}, headers=owner_headers).json()
+    assert client.post('/auth/delete-account', json={'password': 'incorrecta'}, headers=owner_headers).status_code == 401
+    assert client.get('/auth/me', headers=owner_headers).status_code == 200
+    assert client.post('/auth/delete-account', json={'password': 'long-password-12345'}, headers=owner_headers).status_code == 204
+    assert client.get('/auth/me', headers=owner_headers).status_code == 401
+    assert client.get('/profile', headers=other_headers).status_code == 200
+    with client.db_factory() as db:
+        assert db.get(User, owner) is None
+        assert db.get(Profile, owner) is None
+        assert db.get(InitialProfile, owner) is None
+        assert db.get(RolePlan, plan['id']) is None
+        assert db.get(Interview, interview['id']) is None
+        assert db.get(InterviewTurn, interview['current_turn']['id']) is None
+        assert db.get(User, other) is not None
+        assert db.get(Profile, other) is not None
 
 
 def test_register_name_validation_and_persistence(client):

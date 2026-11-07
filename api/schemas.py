@@ -48,6 +48,7 @@ class AnswerInput(InputModel):
 
 
 class InterviewInput(InputModel):
+    plan_id: str | None = Field(default=None, max_length=36)
     duration_minutes: Literal[1, 3, 5, 10, 15] = 5
 
 
@@ -184,3 +185,55 @@ class ExitReflection(InputModel):
         if len(values) != len(set(values)):
             raise ValueError('No se puede repetir un checkpoint.')
         return values
+
+
+class InitialInterviewInput(InputModel):
+    answers: list[AnswerText] = Field(min_length=5, max_length=5)
+
+
+class InitialProfileContext(InputModel):
+    strengths: list[ShortText] = Field(min_length=1, max_length=10)
+    improvement_areas: list[ShortText] = Field(min_length=1, max_length=10)
+    preferences: list[ShortText] = Field(default_factory=list, max_length=10)
+
+
+class ReportSkill(InputModel):
+    label: str = Field(min_length=2, max_length=80)
+    level: Literal['fuerte', 'en_desarrollo', 'a_reforzar']
+    evidence: str = Field(min_length=5, max_length=400)
+
+
+class ReportStrength(InputModel):
+    title: str = Field(min_length=2, max_length=100)
+    evidence: str = Field(min_length=5, max_length=400)
+
+
+class ReportPart(InputModel):
+    label: str = Field(min_length=2, max_length=40)
+    text: str = Field(min_length=5, max_length=600)
+
+
+class ReportImprovement(InputModel):
+    turn_id: str = Field(min_length=1, max_length=36)
+    title: str = Field(min_length=3, max_length=120)
+    observation: str = Field(min_length=5, max_length=500)
+    original_excerpt: str = Field(min_length=1, max_length=600)
+    framework: str = Field(min_length=2, max_length=100)
+    parts: list[ReportPart] = Field(min_length=1, max_length=4)
+    why: list[str] = Field(min_length=1, max_length=4)
+
+
+class InterviewReport(InputModel):
+    version: Literal['interview-report-v1']
+    headline: str = Field(min_length=5, max_length=180)
+    summary: str = Field(min_length=5, max_length=500)
+    worked: str = Field(min_length=5, max_length=500)
+    improvement: str = Field(min_length=5, max_length=500)
+    focus: str = Field(min_length=5, max_length=500)
+    skills: list[ReportSkill] = Field(min_length=1, max_length=6)
+    strengths: list[ReportStrength] = Field(min_length=1, max_length=4)
+    focus_title: str = Field(min_length=3, max_length=120)
+    focus_explanation: str = Field(min_length=5, max_length=500)
+    focus_advice: str = Field(min_length=5, max_length=500)
+    checklist: list[str] = Field(min_length=1, max_length=5)
+    improvements: list[ReportImprovement] = Field(min_length=1, max_length=5)

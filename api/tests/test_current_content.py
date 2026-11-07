@@ -42,5 +42,3 @@ def test_cache_handles_provider_failure(monkeypatch):
     content._cache["old"] = (0, {"items": [{"id": "a"}], "status": "ok", "updated_at": "old"})
     assert content.cached("old", fail)["status"] == "stale"
     content._cache.clear()
-
-

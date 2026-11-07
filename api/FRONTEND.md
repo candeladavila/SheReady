@@ -70,7 +70,9 @@ no permite sustituir su respuesta; repetir el mismo envío es seguro.
 
 ## Entrevista por turnos
 
-1. `POST /interviews` con `{"duration_minutes":3}` (también 5 o 10).
+1. Obtén un plan listo desde `GET /role-plans` y llama a `POST /interviews`
+   con `{"duration_minutes":5,"plan_id":"id-del-plan"}`. Las modalidades son
+   una pregunta (`1`), 5, 10 y 15 minutos. Sin plan propio listo devuelve 409 o 404.
    Devuelve 201 y una entrevista con `id` y `current_turn`.
 2. Muestra `current_turn.question.text`. Para reproducirla solicita
    `GET /interviews/{id}/turns/{turn_id}/speech`: devuelve **bytes WAV**, no JSON ni URL.
@@ -94,8 +96,8 @@ Forma de la entrevista:
 {
   "id": "uuid",
   "status": "active",
-  "duration_minutes": 3,
-  "max_questions": 2,
+  "duration_minutes": 5,
+  "max_questions": 3,
   "answered_questions": 0,
   "ready_to_finish": false,
   "current_turn": {

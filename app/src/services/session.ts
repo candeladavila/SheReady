@@ -2,7 +2,8 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { api, ApiError, AuthSession } from './api';
 import { setAccess } from './access';
-import { clearPendingDocument, pendingProfileDocument } from './profileDocument';
+import storage from './accountStorage';
+import { clearLocalOnboarding, clearPendingDocument, pendingProfileDocument } from './profileDocument';
 
 const KEY = 'sheready-session-v1';
 async function persist(value: string | null) {
@@ -34,9 +35,26 @@ export async function restoreSession(): Promise<AuthSession | null> {
   try { session.user = await api.auth.me(); await persist(JSON.stringify(session)); await syncPendingProfile(); return session; }
   catch (error) { setAccess(null); if (error instanceof ApiError && error.status === 401) { await persist(null); return null; } throw error; }
 }
-export async function endSession() {
-  await api.auth.logout();
-  await persist(null); setAccess(null);
+export async function endSession(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
+  let revoked = false;
+  try { await api.auth.logout(controller.signal); revoked = true; }
+  catch { /* Local sign-out still works when the API is unavailable. */ }
+  finally { clearTimeout(timeout); }
+  await persist(null);
+  setAccess(null);
+  return revoked;
+}
+
+export async function deleteAccount(password: string): Promise<boolean> {
+  await api.auth.deleteAccount(password);
+  let cleared = true;
+  try { await storage.clearAccount(); } catch { cleared = false; }
+  try { await clearLocalOnboarding(); } catch { cleared = false; }
+  try { await persist(null); } catch { cleared = false; }
+  setAccess(null);
+  return cleared;
 }
 
 export async function enterGuestSession() { await persist(null); setAccess(null); }

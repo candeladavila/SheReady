@@ -10,7 +10,7 @@ export const INITIAL_QUESTIONS = [
 ] as const;
 
 export type TargetRole = { role: string; company: string; offerUrl: string; description: string };
-export type GettingStarted = { initialAnswers: string[] | null; targetRole: TargetRole | null };
+export type GettingStarted = { initialAnswers: string[] | null; targetRole: TargetRole | null; activePlanId?: string | null };
 export const emptyGettingStarted: GettingStarted = { initialAnswers: null, targetRole: null };
 const STORAGE_KEY = '@sheready/getting-started-v1';
 
@@ -23,7 +23,7 @@ export async function loadGettingStarted(): Promise<GettingStarted> {
   if (data.initialAnswers != null && (!Array.isArray(data.initialAnswers) || data.initialAnswers.length !== INITIAL_QUESTIONS.length || !data.initialAnswers.every(answer => typeof answer === 'string' && answer.trim()))) throw new Error('Respuestas inválidas');
   const role = data.targetRole;
   if (role != null && (typeof role !== 'object' || !['role', 'company', 'offerUrl', 'description'].every(key => typeof role[key as keyof TargetRole] === 'string'))) throw new Error('Puesto inválido');
-  return { initialAnswers: data.initialAnswers ?? null, targetRole: role ?? null };
+  return { initialAnswers: data.initialAnswers ?? null, targetRole: role ?? null, activePlanId: typeof data.activePlanId === 'string' ? data.activePlanId : null };
 }
 export async function saveGettingStarted(data: GettingStarted): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));

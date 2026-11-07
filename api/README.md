@@ -75,7 +75,7 @@ vectores ni servicios adicionales para esta demo.
   Para editar conservando la fecha envía `interview_date` y omite el plazo.
 - Una actividad generada por día del perfil. Respuesta libre por texto y feedback de IA.
   La misma petición de actividad devuelve la ya creada, incluso si está completada.
-- Entrevistas estimadas de 3/5/10 minutos, con un máximo de 2/3/5 preguntas respectivamente.
+- Entrevistas por puesto con una pregunta o 5/10/15 minutos, con 1/3/5/7 preguntas respectivamente. Se requiere un plan propio listo.
   No hay temporizador estricto: la usuaria puede terminar después de su primera respuesta.
 - Preguntas de voz bajo petición; respuestas en audio se transcriben primero y NO se guardan
   hasta que la usuaria confirma o edita el texto y lo envía como respuesta.

@@ -1,6 +1,9 @@
 import { getAccessToken } from './access';
 import type { ProfileDocument } from './profileDocument';
 /** Cliente compartido para la API de SheReady. No incluyas claves de proveedor aquí. */
+export type PlannedActivity = { type: 'guided_reflection' | 'written_practice'; title: string; description: string; objective: string; improvement_area: string; skill: string; duration_minutes: number; instructions: string[]; prompts: string[]; color: string };
+export type RolePlan = { id: string; status: 'generating' | 'ready' | 'failed'; role: { title: string; sector: string; company: string; offer_url: string; offer_description: string }; plan: { activities: PlannedActivity[] } | null };
+export type InterviewReport = { version: 'interview-report-v1'; headline: string; summary: string; worked: string; improvement: string; focus: string; skills: Array<{ label: string; level: 'fuerte' | 'en_desarrollo' | 'a_reforzar'; evidence: string }>; strengths: Array<{ title: string; evidence: string }>; focus_title: string; focus_explanation: string; focus_advice: string; checklist: string[]; improvements: Array<{ turn_id: string; title: string; observation: string; original_excerpt: string; framework: string; parts: Array<{label: string; text: string}>; why: string[] }> };
 export type Skill = 'technical' | 'communication' | 'teamwork' | 'problem_solving' | 'self_presentation';
 export type Category = 'technical' | 'professional_situation' | 'soft_skills';
 export type Duration = 1 | 3 | 5 | 10 | 15;
@@ -43,10 +46,10 @@ export type Turn = { id: string; position: number; question: Question; answer: s
 export type Interview = {
   id: string; status: 'active' | 'completed'; duration_minutes: Duration; max_questions: number;
   answered_questions: number; ready_to_finish: boolean; current_turn: Turn | null;
-  turns: Turn[]; feedback: Feedback | null; created_at: string; finished_at: string | null;
+  turns: Turn[]; feedback: Feedback | InterviewReport | null; created_at: string; finished_at: string | null;
   profile_snapshot: Omit<ProfileFields, 'age'> & { interview_date: string }; disclaimer: string;
 };
-export type InterviewSummary = Pick<Interview, 'id' | 'status' | 'duration_minutes' | 'created_at' | 'finished_at'> & { summary: string | null };
+export type InterviewSummary = Pick<Interview, 'id' | 'status' | 'duration_minutes' | 'created_at' | 'finished_at'> & { summary: string | null; company?: string; role?: string };
 export type Page<T> = { items: T[]; total: number };
 export type Progress = {
   completed_wellbeing?: number; completed_activities: number; completed_interviews: number; answered_interview_questions: number;
@@ -171,14 +174,21 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
       login: (email: string, password: string) => request<AuthSession>('/auth/login', { method: 'POST', json: { email, password } }),
       register: (email: string, password: string, display_name: string) => request<AuthSession>('/auth/register', { method: 'POST', json: { email, password, display_name } }),
       me: () => request<AuthSession['user']>('/auth/me'),
-      logout: () => request<void>('/auth/logout', { method: 'POST', response: 'empty' }),
+      deleteAccount: (password: string) => request<void>('/auth/delete-account', { method: 'POST', json: { password }, response: 'empty' }),
+      logout: (signal?: AbortSignal) => request<void>('/auth/logout', { method: 'POST', response: 'empty', signal }),
     },
     capabilities: () => request<{ ai_provider: 'gemini' | 'ollama' | 'groq'; ai_configured: boolean; speech_transport?: 'device' | 'server' }>('/capabilities'),
     profile: {
+      initialInterview: () => request<{ completed: boolean; answers: string[] | null; context: { strengths: string[]; improvement_areas: string[]; preferences: string[] } | null }>('/profile/initial-interview'),
+      saveInitialInterview: (answers: string[]) => request<{ completed: boolean; answers: string[] }>('/profile/initial-interview', { method: 'PUT', json: { answers } }),
       saveOnboarding: (document: ProfileDocument) => request<Profile>('/profile/onboarding', { method: 'PUT', json: document }),
       options: () => request<ProfileOptions>('/profile/options'),
       get: () => request<Profile>('/profile'),
       save: (profile: ProfileInput) => request<Profile>('/profile', { method: 'PUT', json: profile }),
+    },
+    rolePlans: {
+      list: () => request<{ items: RolePlan[] }>('/role-plans'),
+      generate: (role: { title: string; sector: string; company: string; offer_url: string; offer_description: string }) => request<{ id: string; status: string }>('/role-plans', { method: 'POST', json: role }),
     },
     activities: {
       daily: () => request<Activity>('/activities/daily', { method: 'POST' }),
@@ -187,7 +197,7 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
       answer: (activityId: string, answer: string) => request<Activity>(`/activities/${id(activityId)}/answer`, { method: 'POST', json: { answer } }),
     },
     interviews: {
-      start: (duration: Duration) => request<Interview>('/interviews', { method: 'POST', json: { duration_minutes: duration } }),
+      start: (duration: Duration, planId?: string) => request<Interview>('/interviews', { method: 'POST', json: { duration_minutes: duration, ...(planId ? { plan_id: planId } : {}) } }),
       list: (limit?: number, offset?: number) => request<Page<InterviewSummary>>(`/interviews${page(limit, offset)}`),
       get: (interviewId: string) => request<Interview>(`/interviews/${id(interviewId)}`),
       answer: (interviewId: string, turnId: string, answer: string) => request<Interview>(`/interviews/${id(interviewId)}/answers`, { method: 'POST', json: { turn_id: turnId, answer } }),

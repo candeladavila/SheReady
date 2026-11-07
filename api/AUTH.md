@@ -25,6 +25,9 @@ progreso) requieren `Authorization: Bearer <access_token>`. Las rutas `/auth/reg
 
 - `GET /auth/me`: obtiene la cuenta autenticada.
 - `POST /auth/logout`: revoca la sesión actual y devuelve 204. El frontend borra su token.
+- `POST /auth/delete-account`: recibe `{ "password": "..." }` y elimina la cuenta
+  autenticada y sus datos asociados; requiere confirmar la contraseña y devuelve 204.
+  El cliente elimina además los datos de esa cuenta guardados en el dispositivo.
 - Sesión caducada, revocada o token inválido: 401; volver al login. No hay refresh token.
 - Registro duplicado: 409; datos de entrada inválidos: 422.
 - Perfil sin onboarding: 409; recurso de otra usuaria: 404.
