@@ -18,7 +18,16 @@ from content import CONTENT, SKILLS
 from current_content import SECTORS, cached, load_events, load_news
 from database import get_db
 from middleware import BodyLimitMiddleware
-from models import Activity, InitialProfile, Interview, InterviewTurn, Profile, RolePlan, WellbeingCompletion, now
+from models import (
+    Activity,
+    InitialProfile,
+    Interview,
+    InterviewTurn,
+    Profile,
+    RolePlan,
+    WellbeingCompletion,
+    now,
+)
 from personalized import router as personalized_router
 from schemas import (
     AnswerInput,
@@ -158,6 +167,10 @@ def profile_view(profile):
     return {
         "id": profile.id,
         **profile.data,
+        "goals": profile.goals,
+        "age_range": profile.age_range,
+        "daily_time_choice": profile.daily_time_choice,
+        "sector": profile.sector,
         "days_until_interview": (
             (date.fromisoformat(profile.data["interview_date"]) - today()).days
             if profile.data.get("interview_date")
@@ -205,6 +218,10 @@ def save_onboarding(body: OnboardingDocument, db: DB):
     else:
         item = Profile(id=db.info["user_id"], data=data)
         db.add(item)
+    item.goals = body.goals
+    item.age_range = body.age_range
+    item.daily_time_choice = body.daily_time_choice
+    item.sector = data.get("sector")
     db.commit()
     return profile_view(item)
 
@@ -219,9 +236,10 @@ def save_profile(body: ProfileInput, db: DB):
         if item.data.get("onboarding_document"):
             data["onboarding_document"] = item.data["onboarding_document"]
         item.data = data
+        item.sector = data.get("sector")
         item.updated_at = now()
     else:
-        item = Profile(id=db.info["user_id"], data=data)
+        item = Profile(id=db.info["user_id"], data=data, sector=data.get("sector"))
         db.add(item)
     db.commit()
     return profile_view(item)

@@ -75,3 +75,7 @@ reintentar. Las sesiones nativas utilizan SecureStore; en web se utiliza session
 La invitada puede explorar y usar bienestar, pero no enviar peticiones de IA sin sesión.
 
 Este alcance no incluye recuperación de contraseña, verificación de correo ni OAuth.
+
+## Onboarding por cuenta
+
+Tras iniciar sesión o crear la cuenta, las usuarias sin un onboarding completo pueden rellenarlo. El backend guarda objetivos, rango de edad, ritmo y sector en columnas de `profiles` asociadas al ID de la cuenta, además de conservar el documento anterior. Las respuestas de la entrevista inicial y su contexto generado se guardan por cuenta en `initial_profiles`. No se deduce una edad exacta a partir de un rango. La migración Alembic `20261107_profile_fields` recupera los datos existentes del documento; ejecutar `alembic upgrade head` antes de arrancar la nueva versión del backend. El modo invitada sigue disponible sin cuenta y no guarda un onboarding en la base de datos.
