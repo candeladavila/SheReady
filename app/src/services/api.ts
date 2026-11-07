@@ -53,6 +53,8 @@ export type InterviewSummary = Pick<Interview, 'id' | 'status' | 'duration_minut
 export type Page<T> = { items: T[]; total: number };
 export type Progress = {
   completed_wellbeing?: number; completed_activities: number; completed_interviews: number; answered_interview_questions: number;
+  completed_breathing: number; completed_confidence: number; completed_personalized: number; streak_days: number;
+  week: { date: string; completed: boolean }[]; recent_events: { date: string; label: string }[]; improvement_areas: string[];
   skills: { id: Skill; label: string; practices: number }[];
   milestones: { id: string; label: string; current: number; target: number; achieved: boolean }[];
   recommendations: Feedback[]; measurement: string;
@@ -220,7 +222,7 @@ export function createApiClient({ baseUrl, getToken, timeoutMs = 210_000, requir
       form.append('file', audio, 'dictado.webm');
       return request<{ transcript: string; saved: false; source: 'ai'; next_step: string }>('/dictation/transcriptions', { method: 'POST', form });
     },
-    wellbeingComplete: (body: { id: string; kind: 'breathing' | 'confidence'; duration_seconds: number }) => request<{ id: string }>('/wellbeing/completions', { method: 'POST', json: body }),
+    wellbeingComplete: (body: { id: string; kind: 'breathing' | 'confidence' | 'personalized'; duration_seconds: number }) => request<{ id: string }>('/wellbeing/completions', { method: 'POST', json: body }),
     progress: () => request<Progress>('/progress'),
     news: (sector = 'Otro sector') => request<ContentFeed<NewsItem>>(`/news?sector=${encodeURIComponent(sector)}`),
     events: (city = 'Málaga', sector?: string) => request<ContentFeed<EventItem>>(`/events?city=${encodeURIComponent(city)}${sector ? `&sector=${encodeURIComponent(sector)}` : ''}`),

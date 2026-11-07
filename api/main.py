@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Literal
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +18,7 @@ from content import CONTENT, SKILLS
 from current_content import SECTORS, cached, load_events, load_news
 from database import get_db
 from middleware import BodyLimitMiddleware
-from models import Activity, Interview, InterviewTurn, Profile, RolePlan, WellbeingCompletion, now
+from models import Activity, InitialProfile, Interview, InterviewTurn, Profile, RolePlan, WellbeingCompletion, now
 from personalized import router as personalized_router
 from schemas import (
     AnswerInput,
@@ -476,8 +477,28 @@ def question_speech(interview_id: str, turn_id: str, db: DB, ai: AI):
 
 @router.get("/progress", tags=["progress"])
 def progress(db: DB):
-    activities = db.scalars(select(Activity).where(Activity.completed_at.is_not(None))).all()
-    interviews = db.scalars(select(Interview).where(Interview.status == "completed")).all()
+    user_id = db.info['user_id']
+    activities = db.scalars(select(Activity).where(Activity.profile_id == user_id, Activity.completed_at.is_not(None))).all()
+    interviews = db.scalars(select(Interview).where(Interview.profile_id == user_id, Interview.status == "completed")).all()
+    wellbeing = db.scalars(select(WellbeingCompletion).where(WellbeingCompletion.profile_id == user_id)).all()
+    initial = db.get(InitialProfile, user_id)
+    zone = ZoneInfo(get_settings().app_timezone)
+    def local_day(value):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(zone).date()
+    events = [(a.completed_at, 'Actividad completada') for a in activities]
+    events += [(i.finished_at or i.created_at, 'Entrevista de práctica completada') for i in interviews]
+    labels = {'breathing': 'Pausa para respirar', 'confidence': 'Ejercicio de confianza', 'personalized': 'Actividad personalizada completada'}
+    events += [(w.created_at, labels.get(w.kind, 'Actividad completada')) for w in wellbeing]
+    days = {local_day(when) for when, _ in events}
+    today_local = datetime.now(zone).date()
+    cursor = today_local if today_local in days else today_local - timedelta(days=1)
+    streak = 0
+    while cursor in days:
+        streak += 1
+        cursor -= timedelta(days=1)
+    recent = sorted(events, key=lambda event: event[0].replace(tzinfo=timezone.utc) if event[0].tzinfo is None else event[0], reverse=True)[:5]
     counts = {s["id"]: 0 for s in SKILLS}
     for a in activities:
         counts[a.content["skill"]] += 1
@@ -518,7 +539,14 @@ def progress(db: DB):
     for m in milestones:
         m["achieved"] = m["current"] >= m["target"]
     return {
-        "completed_wellbeing": db.scalar(select(func.count()).select_from(WellbeingCompletion)),
+        "completed_wellbeing": len(wellbeing),
+        "completed_breathing": sum(w.kind == 'breathing' for w in wellbeing),
+        "completed_confidence": sum(w.kind == 'confidence' for w in wellbeing),
+        "completed_personalized": sum(w.kind == 'personalized' for w in wellbeing),
+        "streak_days": streak,
+        "week": [{'date': (today_local - timedelta(days=i)).isoformat(), 'completed': today_local - timedelta(days=i) in days} for i in range(6, -1, -1)],
+        "recent_events": [{'date': local_day(when).isoformat(), 'label': label} for when, label in recent],
+        "improvement_areas": initial.context.get('improvement_areas', []) if initial else [],
         "completed_activities": len(activities),
         "completed_interviews": len(interviews),
         "answered_interview_questions": sum(
@@ -561,7 +589,7 @@ def wellbeing():
 class WellbeingInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str = Field(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_-]+$")
-    kind: Literal["breathing", "confidence"]
+    kind: Literal["breathing", "confidence", "personalized"]
     duration_seconds: int = Field(ge=0, le=7200)
 
 
