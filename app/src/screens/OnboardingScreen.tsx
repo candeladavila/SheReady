@@ -24,7 +24,7 @@ export const sectors = ['Tecnología', 'Marketing', 'Finanzas', 'Educación y sa
 const purple = colors.plum;
 const sage = colors.sage;
 
-export default function OnboardingScreen({ onComplete, onSkip, startAtForm = false, initialDocument = null, onCancel }: { onComplete: (document: ProfileDocument) => Promise<void>; onSkip: (document: ProfileDocument) => Promise<void>; startAtForm?: boolean; initialDocument?: ProfileDocument | null; onCancel?: () => void }) {
+export default function OnboardingScreen({ onComplete, onSkip, onGuestHome, onGuestNews, onLogin, guestError, startAtForm = false, initialDocument = null, onCancel }: { onComplete: (document: ProfileDocument) => Promise<void>; onSkip: (document: ProfileDocument) => Promise<void>; onGuestHome: () => void; onGuestNews: () => void; onLogin: () => void; guestError?: string; startAtForm?: boolean; initialDocument?: ProfileDocument | null; onCancel?: () => void }) {
   const [page, setPage] = useState(startAtForm ? 2 : 1);
   const [selectedGoals, setSelectedGoals] = useState<string[]>(initialDocument?.goals ?? []);
   const [age, setAge] = useState(initialDocument?.age_range ?? '');
@@ -53,16 +53,19 @@ export default function OnboardingScreen({ onComplete, onSkip, startAtForm = fal
       <StatusBar style="dark" />{saveError ? <Text accessibilityRole="alert" style={styles.helper}>{saveError}</Text> : null}
       {page === 1 ? (
         <ScrollView contentContainerStyle={styles.intro}>
-          <View style={styles.introHeader}><Text style={styles.brand}>She ready</Text><Pressable accessibilityRole="button" onPress={() => void finish(false)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>Saltar</Text></Pressable></View>
-          <View style={styles.hero}><Text style={styles.heroEyebrow}>NO TIENES QUE TENERLO TODO CLARO.</Text><Text style={styles.heroTitle}>Un paso.</Text><Text style={[styles.heroTitle, styles.heroItalic]}>Y otro.</Text><View style={styles.heroLast}><Text style={[styles.heroTitle, { color: sage }]}>A tu ritmo.</Text><Text style={styles.limeArrow}>↗</Text></View></View>
-          <Text style={styles.introTitle}>Tu próximo capítulo,{'\n'}con compañía.</Text>
-          <Text style={styles.description}>Ejercicios diarios, noticias relevantes y práctica de entrevistas con IA por voz para que avances con claridad y confianza.</Text>
-          <View style={styles.bullets}><Text style={styles.bulletText}>• Ejercicios diarios para avanzar poco a poco.{'\n'}• Noticias que te ayudan a entender el mercado.{'\n'}• Práctica de entrevistas con IA por voz para sentirte más segura.</Text></View>
+          <View style={styles.introHeader}><Text style={styles.brand}>SheReady</Text></View>
+          <View style={styles.welcomeIntro}><Text style={styles.eyebrow}>TU ESPACIO, TU CAMINO</Text><Text style={styles.introTitle}>Un paso a tu ritmo.</Text><Text style={styles.description}>Empieza por donde quieras.</Text></View>
+          <View style={styles.entryOptions}>
+            <Entry label="Inicio" detail="Entra como invitada" icon="⌂" onPress={onGuestHome} />
+            <Entry label="Noticias para ti" detail="Explora la actualidad y los eventos" icon="▤" onPress={onGuestNews} />
+            <Entry label="Mi perfil" detail="Inicia sesión para acceder" icon="♙" onPress={onLogin} />
+          </View>
+          {!!guestError && <Text accessibilityRole="alert" style={styles.entryError}>{guestError}</Text>}
           <View style={styles.introFooter}><Action label="Crear mi plan" onPress={goNext} /><Text style={styles.helper}>5 pasos breves. Tú decides qué compartir.</Text></View>
         </ScrollView>
       ) : (
         <>
-          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => page === 2 && onCancel ? onCancel() : setPage(page - 1)} hitSlop={12}><Text style={styles.back}>←</Text></Pressable><Text style={styles.brand}>She ready</Text><View style={styles.headerRight}><Text style={styles.counter}>{page - 1} de 5</Text><Pressable accessibilityRole="button" onPress={() => onCancel ? onCancel() : void finish(false)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>{onCancel ? 'Cancelar' : 'Saltar'}</Text></Pressable></View></View>
+          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => page === 2 && onCancel ? onCancel() : setPage(page - 1)} hitSlop={12}><Text style={styles.back}>←</Text></Pressable><Text style={styles.brand}>SheReady</Text><View style={styles.headerRight}><Text style={styles.counter}>{page - 1} de 5</Text><Pressable accessibilityRole="button" onPress={() => onCancel ? onCancel() : void finish(false)} hitSlop={8} style={styles.skip}><Text style={styles.skipText}>{onCancel ? 'Cancelar' : 'Saltar'}</Text></Pressable></View></View>
           <View style={styles.progress}>{[0, 1, 2, 3, 4].map(i => <View key={i} style={[styles.progressPart, i < page - 1 && styles.progressActive]} />)}</View>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {page === 2 && <><Heading eyebrow="TU PUNTO DE PARTIDA" title={'¿Qué necesitas\nhoy?'} description="Elige uno o varios objetivos. Empezaremos por lo que más te importa." /><View style={styles.options}>{goals.map(option => <Choice key={option.label} option={option} selected={selectedGoals.includes(option.label)} multiple onPress={() => toggleGoal(option.label)} />)}</View></>}
@@ -78,6 +81,10 @@ export default function OnboardingScreen({ onComplete, onSkip, startAtForm = fal
   );
 }
 
+function Entry({ label, detail, icon, onPress }: { label: string; detail: string; icon: string; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.entry, pressed && styles.pressed]}><Text style={styles.entryIcon}>{icon}</Text><View style={styles.choiceText}><Text style={styles.entryTitle}>{label}</Text><Text style={styles.choiceDetail}>{detail}</Text></View><Text style={styles.entryArrow}>→</Text></Pressable>;
+}
+
 function SectorChoice({ label, half, selected, onPress }: { label: string; half: boolean; selected: boolean; onPress: () => void }) {
   return <View style={half ? styles.half : styles.full}><Pressable accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={onPress} style={({ pressed }) => [styles.choice, selected && styles.choiceSelected, pressed && styles.pressed]}><View style={styles.choiceText}><Text style={[styles.choiceLabel, selected && styles.choiceLabelSelected]}>{label}</Text></View><View style={[styles.indicator, selected && styles.indicatorSelected]}>{selected && <View style={styles.radioDot} />}</View></Pressable></View>;
 }
@@ -88,6 +95,7 @@ function Choice({ option, selected, multiple = false, onPress }: { option: Optio
 
 const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' });
 const styles = StyleSheet.create({
+  welcomeIntro: { marginTop: 26, marginBottom: 34 }, entryOptions: { gap: 10 }, entry: { minHeight: 74, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 }, entryIcon: { width: 44, color: colors.plum, fontSize: 26 }, entryTitle: { color: colors.eggplant, fontSize: 16, fontWeight: '600' }, entryArrow: { color: colors.plum, fontSize: 23 }, entryError: { color: colors.eggplant, marginTop: 12 },
   sectorHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }, sectorHeaderText: { flex: 1, minWidth: 0 }, sectorHeaderImage: { width: 105, height: 145 }, sectorHeaderImageWeb: { width: 240, height: 240 },
   root: { flex: 1, backgroundColor: colors.ivory, paddingTop: Platform.OS === 'web' ? 24 : 55 },
   skip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }, skipText: { color: colors.plum, fontSize: 14, fontWeight: '600' }, headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
