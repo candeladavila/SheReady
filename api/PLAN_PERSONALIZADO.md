@@ -2,27 +2,21 @@
 
 ## Petición de planificación
 
-`POST /plans/generate` recibe un JSON con el contexto declarado por la usuaria y el puesto. El servidor hace una única petición al proveedor de IA configurado; valida la salida con `PersonalizedPlan` y devuelve `502` si no cumple el contrato. El contexto y la oferta son datos, no instrucciones. El endpoint no descarga el contenido de la URL: para tener en cuenta la oferta hay que proporcionar también `offer_description`.
+`POST /role-plans` recibe los datos del puesto. Si se incluye `offer_url`, el servidor intenta descargar una página pública HTML o texto y extraer hasta 6.000 caracteres para contextualizar el plan. La extracción sigue un número limitado de redirecciones, solo acepta HTTP(S) en puertos web estándar, rechaza destinos con direcciones IP no públicas y limita tiempo y tamaño de respuesta. No envía cookies ni credenciales. Algunos portales bloquean lecturas automáticas o renderizan la oferta con JavaScript; en esos casos, pega la descripción en `offer_description`. Si existe una descripción manual se conserva como alternativa cuando falla la extracción. El contenido extraído se trata como dato no confiable, nunca como instrucciones para el modelo.
+
+El servidor hace una única petición al proveedor de IA configurado y valida la salida con `PersonalizedPlan`; devuelve `502` si no cumple el contrato. El plan ya generado para el mismo puesto se devuelve sin repetir la extracción ni llamar de nuevo a la IA.
 
 ```json
 {
-  "context": {
-    "strengths": ["Escucha activa"],
-    "improvement_areas": ["Explicar mis logros con ejemplos"],
-    "preferences": ["Practicar con preguntas breves"],
-    "initial_answers": ["Me interesa desarrollar productos accesibles."]
-  },
-  "target_role": {
-    "title": "Diseñadora de producto",
-    "sector": "Tecnología",
-    "company": "Empresa de ejemplo",
-    "offer_url": "",
-    "offer_description": "Diseñar experiencias digitales y colaborar con equipos de producto."
-  }
+  "title": "Diseñadora de producto",
+  "sector": "Tecnología",
+  "company": "Empresa de ejemplo",
+  "offer_url": "https://example.com/empleo/disenadora-producto",
+  "offer_description": "Diseñar experiencias digitales y colaborar con equipos de producto."
 }
 ```
 
-`strengths` puede estar vacío; `improvement_areas` contiene al menos un elemento. `preferences` e `initial_answers` son opcionales. El puesto requiere título, sector y al menos una URL o descripción. La URL no se interpreta automáticamente. Se recomienda omitir datos innecesarios y no incluir edad.
+El puesto requiere título, sector y al menos una URL o descripción. El contexto de la entrevista inicial se carga desde la cuenta autenticada; no se envían fortalezas ni respuestas en esta petición. Una URL puede fallar si el portal requiere iniciar sesión, bloquea el acceso automático o construye la oferta con JavaScript. Se recomienda no incluir datos personales innecesarios.
 
 ## JSON de respuesta de la IA
 
