@@ -12,7 +12,7 @@ SheReady es una aplicación para ayudar a mujeres a preparar entrevistas de trab
 
 - **Cuenta y perfil individual:** registro e inicio de sesión; los datos de perfil y práctica se asocian a la cuenta.
 - **Onboarding y entrevista inicial:** recoge preferencias y respuestas iniciales. La API utiliza esa información para elaborar un contexto de fortalezas y áreas de práctica.
-- **Preparación para un puesto:** se puede registrar el rol y los datos de la oferta. La URL se conserva como referencia; para que la IA use el contenido de la oferta también hay que proporcionar su descripción.
+- **Preparación para un puesto:** se puede registrar el rol y los datos de la oferta. Si se incluye una URL pública, el backend intenta extraer texto de la página para el plan; también se puede añadir una descripción manual. Si la página no permite la extracción y no hay descripción, se muestra un error para que la usuaria pueda pegar el texto.
 - **Plan personalizado:** para cada puesto, la IA prepara tres simulacros de cada modalidad (una pregunta, 5, 10 y 15 minutos) y tres actividades enfocadas en las áreas de práctica de la usuaria.
 - **Entrevistas de práctica:** preguntas generadas para el plan, respuestas por texto o voz, transcripción de audio, informe de feedback e historial.
 - **Actividades y progreso:** actividades de bienestar y confianza, ejercicios personalizados y registro de avances.

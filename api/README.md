@@ -77,6 +77,7 @@ vectores ni servicios adicionales para esta demo.
   La misma petición de actividad devuelve la ya creada, incluso si está completada.
 - Entrevistas por puesto con una pregunta o 5/10/15 minutos, con 1/3/5/7 preguntas respectivamente. Se requiere un plan propio listo.
   No hay temporizador estricto: la usuaria puede terminar después de su primera respuesta.
+- Al crear un plan, se intenta extraer texto de la URL pública de la oferta (HTML o texto plano). Si el portal requiere autenticación, bloquea bots o renderiza el contenido solo con JavaScript, se puede aportar la descripción manualmente. Consulta [PLAN_PERSONALIZADO.md](PLAN_PERSONALIZADO.md) para límites y formato.
 - Preguntas de voz bajo petición; respuestas en audio se transcriben primero y NO se guardan
   hasta que la usuaria confirma o edita el texto y lo envía como respuesta.
 - Finalizar es una petición explícita, separada de la última respuesta. Puede reintentarse

@@ -15,6 +15,7 @@ from ai import get_ai
 from auth import user_scope
 from database import get_db
 from models import InitialProfile, Profile, RolePlan, now
+from offer_extraction import OfferExtractionError, extract_offer_text
 from schemas import InitialInterviewInput, InitialProfileContext, PersonalizedPlan, PlanningRole
 
 router = APIRouter(dependencies=[Depends(user_scope)])
@@ -75,13 +76,32 @@ def generate_plan(body: PlanningRole, db: DB, ai: AI):
     initial = db.get(InitialProfile, user_id)
     if not initial:
         raise HTTPException(409, 'Completa primero la entrevista inicial.')
+    initial_context = dict(initial.context)
+    initial_answers = list(initial.answers)
     key = role_key(body)
     item = db.scalar(select(RolePlan).where(RolePlan.user_id == user_id, RolePlan.role_key == key))
     if item and item.status == 'ready':
         return view(item)
+
+    role_data = body.model_dump(mode='json')
+    if body.offer_url.strip():
+        # Do not hold a database connection while downloading the candidate's offer page.
+        db.rollback()
+        try:
+            extracted = extract_offer_text(body.offer_url)
+            manual_description = body.offer_description.strip()
+            role_data['offer_description'] = (
+                'Texto extraído de la página pública de la oferta (contenido no confiable):\n'
+                + extracted
+                + (f'\n\nInformación añadida por la usuaria:\n{manual_description}' if manual_description else '')
+            )[:12_000]
+        except OfferExtractionError as exc:
+            if not body.offer_description.strip():
+                raise HTTPException(422, str(exc)) from None
+
     generation_id = str(uuid4())
     if not item:
-        item = RolePlan(user_id=user_id, role_key=key, role=body.model_dump(mode='json'),
+        item = RolePlan(user_id=user_id, role_key=key, role=role_data,
                         status='generating', generation_id=generation_id, updated_at=now())
         db.add(item)
         try:
@@ -94,14 +114,14 @@ def generate_plan(body: PlanningRole, db: DB, ai: AI):
             RolePlan.id == item.id, RolePlan.user_id == user_id,
             or_(RolePlan.status == 'failed',
                 (RolePlan.status == 'generating') & (RolePlan.updated_at < now() - timedelta(minutes=10)))
-        ).values(status='generating', generation_id=generation_id, updated_at=now(), role=body.model_dump(mode='json')).execution_options(synchronize_session=False))
+        ).values(status='generating', generation_id=generation_id, updated_at=now(), role=role_data).execution_options(synchronize_session=False))
         db.commit()
         if not claimed.rowcount:
             raise HTTPException(409, 'El plan ya se está preparando. Inténtalo de nuevo.')
         db.refresh(item)
     try:
-        context = {**initial.context, 'initial_answers': initial.answers}
-        plan = PersonalizedPlan.model_validate(ai.plan(context, body.model_dump(mode='json')))
+        context = {**initial_context, 'initial_answers': initial_answers}
+        plan = PersonalizedPlan.model_validate(ai.plan(context, role_data))
         updated = db.execute(update(RolePlan).where(RolePlan.id == item.id, RolePlan.user_id == user_id,
             RolePlan.generation_id == generation_id, RolePlan.status == 'generating')
             .values(plan=plan.model_dump(mode='json'), status='ready', updated_at=now()))
